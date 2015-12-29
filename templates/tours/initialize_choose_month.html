@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load staticfiles crispy_forms_tags %}
+
+{% block title %} CKS Tour Management: Initialize Month {% endblock %}
+
+{% block content %}
+<h1>Choose a Month to Initialize</h1>
+
+<div class="js-choose-month-container">
+{% crispy form %}
+</div>
+
+
+<script type="text/javascript">
+$('.js-choose-month-container form').on('submit', function(e){
+    e.preventDefault();
+    $this = $(this);
+    year_month_str = $this.find('.js-month').val()
+    var url = '/tours/month/' + year_month_str + '/initialize/';
+    window.location = url;
+    return false;
+});
+</script>
+{% endblock %}

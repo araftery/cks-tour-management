@@ -1,0 +1,2 @@
+## New Features
+* Change text and email messages

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load staticfiles core_tags %}
+
+{% block title %} CKS Tour Management: {{month|month_name}} {{year}} {% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static "css/calendar.css" %}" />
+    <link rel="stylesheet" href="{% static "css/edit-month.css" %}" />
+
+    <script>
+    $(function() {
+        $('#submit_btn').click(function(){
+            $('form.edit-month').submit();
+        });
+    })
+    </script>
+
+{% endblock %}
+
+{% block content %}
+<h1>
+    {{month|month_name}} {{year}}
+</h1>
+
+<form class="edit-month" method="post">
+    {{ formset.management_form }}
+    {% csrf_token %}
+
+<table class="month editall">
+
+    <thead>
+        <tr>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+            <th>Saturday</th>
+            <th>Sunday</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for week in weeks %}
+            <tr class="week">
+            {% for date, day, tours, canceled in week %}
+                <td class="day{% if date == now.day and month == now.month and year == now.year %} current{% endif %}{% if canceled %} canceled{% endif %}" data-date="{{ date }}">
+                    {% if date > 0 %} <div class="date_num_container"><span class="date_num">{{ date }}</span></div>
+                    <div class="other">
+                        
+                        {% if tours %}
+                        <ul class="tours">
+                        
+                            {% for tour in tours %}
+                                <li class="tour{% if tour.is_missed %} missed{% else %}{% if tour.is_late %} late{% endif %}{% endif %}{% if not tour.guide %} unclaimed{% endif %}"><table class="ind_tour"><tr><td>{{ tour.time|date:"g:i" }}</td>
+                                <td>
+                                    {% with tour.id as id %}
+                                        {{ forms_by_id.id }}
+                                    {% endwith %}
+                                </td>
+                                </tr></table></li>
+                            {% endfor %}
+
+                        </ul>
+                        {% endif %}
+                            
+                    </div>
+                    {% endif %}
+                </td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</form>
+
+<div class="row">
+    <div class="col-sm-6 key edit-month-key">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title">Key</h3>
+            </div>
+
+            <div class="panel-body">
+                <table>
+                    <tr><td><div class="key-canceled"></div></td><td>No Regular Tours</td></tr>
+                    <tr><td><span class="key-unclaimed-edit">12:00</span></td><td>Unclaimed Tour</td></tr>
+                    <tr><td><span class="key-missed">12:00</span></td><td>Missed Tour</td></tr>
+                    <tr><td><span class="key-late">12:00</span></td><td>Late Tour</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title">Actions</h3>
+            </div>
+            <div class="panel-body">
+                <button id="submit_btn" class="btn btn-danger btn-block">Submit</button>
+                <a href="{% url 'tours:month' year month %}" class="btn btn-info btn-block">Return</a>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.row -->
+{% endblock %}

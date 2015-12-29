@@ -1,0 +1,96 @@
+## Views to Move
+[ ] text_response
+[ ] month_shifts
+    [ ] view
+    [ ] template
+[x] month
+    [x] view
+    [x] template
+[ ] print_month
+    [ ] view
+    [ ] template
+[ ] tour
+    [x] view
+    [ ] template
+    [ ] May be an issue with time handling. See former implementation
+[ ] new_tour
+    [x] view
+    [ ] template
+[ ] delete_tour
+    [x] view
+    [ ] template
+[x] initialize_month
+    [x] view
+    [x] template
+[-] edit_month - NOT TRANSFER
+    [ ] view
+    [ ] template
+[ ] RosterVCardView
+    [ ] view
+[ ] roster
+    [ ] view
+    [ ] template
+[ ] shift
+    [x] view
+    [ ] template
+[ ] all_shifts
+    [ ] view
+    [ ] template
+[ ] delete_shift
+    [x] view
+    [ ] template
+[ ] new_shift
+    [x] view
+    [ ] template
+[ ] person
+    [x] view
+    [ ] template
+[ ] delete_person
+    [x] view
+    [ ] template
+[ ] BulkNewPersonView
+    [ ] view
+    [ ] template
+[ ] new_person
+    [x] view
+    [ ] template
+[ ] delete_inactive_semester
+    [x] view
+    [ ] template
+[ ] edit_month_initialization
+    [ ] view
+    [ ] template
+[ ] uninitialize_month
+    [ ] view
+    [ ] template
+[ ] settings_page
+    [ ] view
+    [ ] template
+[ ] default_tour
+    [ ] view
+    [ ] template
+[ ] new_default_tour
+    [ ] view
+    [ ] template
+[ ] delete_default_tour
+    [ ] view
+    [ ] template
+[ ] home
+    [ ] view
+    [ ] template
+[ ] login
+    [ ] view
+    [ ] template
+[ ] logout
+    [ ] view
+    [ ] template
+[ ] unsupported_browser
+    [ ] view
+    [ ] template
+[ ] open_month
+    [ ] view
+    [ ] template
+[ ] close_month
+    [ ] view
+    [ ] template
+[ ] Create default settings in dataabse
