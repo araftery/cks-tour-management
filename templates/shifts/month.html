@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load staticfiles core_tags %}
+
+{% block title %} CKS Tour Management: {{month|month_name}} {{year}} {% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static "css/calendar.css" %}" />
+{% endblock %}
+
+{% block content %}
+<h1>
+    <a class="circle-container circle-left" href="{% url 'shifts:month' prev_month.year prev_month.month %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-left"></i></div>
+    </a>
+    {{month|month_name}} {{year}}
+    <a class="circle-container circle-right" href="{% url 'shifts:month' next_month.year next_month.month %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-right"></i></div>
+    </a>
+</h1>
+
+        <table class="month">
+
+            <thead>
+                <tr>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                    <th>Sunday</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for week in weeks %}
+                    <tr class="week">
+                    {% for date, day, shifts, canceled in week %}
+                        <td class="day{% if date == now.day and month == now.month and year == now.year %} current{% endif %}{% if canceled %} canceled{% endif %}" data-date="{{ date }}">
+                            {% if date > 0 %} <div class="date_num_container"><span class="date_num">{{ date }}</span></div>
+                            <div class="other">
+                                
+                                {% if shifts %}
+                                <ul class="tours">
+                                
+                                    {% for shift in shifts %}
+                                        <li class="tour{% if shift.missed %} missed{% else %}{% if shift.late %} late{% endif %}{% endif %}{% if not shift.person %} unclaimed{% endif %}">
+                                            {% if perms.shifts.change_shift %}<a href="{% url 'shifts:shift-edit' pk=shift.pk %}">{% endif %}
+                                                <table class="ind_tour"><tr><td>{{ shift.time|date:"g:i" }}</td><td>{% if shift.person %}{{ shift.person.first_name|slice:"0:1" }}. {{ shift.person.last_name }}{% else %}Unclaimed{% endif %}</td></tr></table>
+                                            {% if perms.shifts.change_shift %}</a>{% endif %}
+                                        </li>
+                                    {% endfor %}
+
+                                </ul>
+                                {% endif %}
+                                    
+                            </div>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+<div class="row">
+    <div class="col-sm-6 key">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title">Key</h3>
+            </div>
+
+            <div class="panel-body">
+                <table>
+                    <tr><td><span class="key-unclaimed">abcdefg</span></td><td>Unclaimed Shift</td></tr>
+                    <tr><td><span class="key-missed">abcdefg</span></td><td>Missed Shift</td></tr>
+                    <tr><td><span class="key-late">abcdefg</span></td><td>Late Shift</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-sm-6">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title cal"><a href="{% url 'shifts:month' prev_year month %}" class="cal_btn_left"><span class="glyphicon glyphicon-chevron-left"></span></a> {{ year }}<a href="{% url 'shifts:month' next_year month %}" class="cal_btn_right"><span class="glyphicon glyphicon-chevron-right"></span></a></h3>
+            </div>
+
+            <div class="panel-body">
+                <div class="select-month-container">
+                    <div class="select-month-row">
+                    {% for num, name in months_list %}
+                        <a {% if num == month %} class="active "{% endif %}href="{% url 'shifts:month' year num %}" class="month-btn">{{ name|slice:":3" }}</a>
+                        {% if num|divisibleby:"4" %}
+                            </div>{% if num != 12 %}<div class="select-month-row">{% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

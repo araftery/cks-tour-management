@@ -3,20 +3,20 @@
 
 {% block title %} CKS Tour Management: 
 {% if object %}
-    Edit Tour
+    Edit Member
 {% else %}
-    New Tour
+    New Member
 {% endif %}
 {% endblock %}
 
 {% block content %}
 {% if object %}
-    <h1>Tour on {{ object.time|date:"m/d/y" }} at {{ object.time|date:"g:i A" }}</h1>
+    <h1>{{ object.first_name }} {{ object.last_name }}</h1>
 {% else %}
-    <h1>New Tour</h1>
+    <h1>New Member</h1>
 {% endif %}
 
-{% if object and perms.tours.delete_tour %}
+{% if object and perms.tours.delete_person %}
 <div class="col-md-8">
 {% endif %}
     {% crispy form %}
@@ -24,12 +24,12 @@
 </div>
 {% endif %}
 
-{% if object and perms.tours.delete_tour %}
+{% if object and perms.tours.delete_person %}
 <div class="col-md-4">
 <div class="panel panel-warning">
     <div class="panel-heading">Warning: these actions are irreversible</div>
     <div class="panel-body">
-        <a class="btn btn-warning btn-block post-btn" data-action="delete this tour" href="{% url 'tours:tour-delete' object.pk %}">Delete this tour</a>
+        <a class="btn btn-warning btn-block post-btn" data-action="delete this member" href="{% url 'profiles:person-delete' object.pk %}">Delete this member</a>
     </div>
 </div>
 </div>
@@ -38,22 +38,6 @@
 
 <script>
 $(function() {
-    $('.selectize').selectize({
-        create: false,
-    });
-
-    $('.datepicker').datetimepicker({
-        ampm: true,
-        dateFormat: 'mm/dd/yy',
-        timeFormat: 'hh:mm tt',
-        stepMinute: 5
-    });
-
-    $('.timepicker').timepicker({
-        ampm: true,
-        timeFormat: 'hh:mm tt',
-        stepMinute: 5
-    });
     $('#add_inactive_semester_btn').click(function(){
         var year = $('#add_inactive_semester_btn').data('year');
         var num = $('#inactive-semesters-table tbody tr.editable').length;

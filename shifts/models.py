@@ -19,7 +19,7 @@ class Shift(models.Model):
     source_choices = [(i, i) for i in source_choices_flat]
 
     source = models.CharField(max_length=500)
-    person = models.ForeignKey('profiles.Person', related_name='shifts')
+    person = models.ForeignKey('profiles.Person', related_name='shifts', null=True, blank=True)
     time = models.DateTimeField()
     notes = models.TextField(max_length=2000, blank=True)
     missed = models.BooleanField(default=False)

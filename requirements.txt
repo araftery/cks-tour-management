@@ -13,3 +13,5 @@ twilio==3.6.9
 vobject==0.6.6
 MySQL-python==1.2.5
 django-selectize==1.2
+python-social-auth==0.2.13
+django-extra-views==0.6.5

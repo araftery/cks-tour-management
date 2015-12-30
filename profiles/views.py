@@ -4,25 +4,36 @@ from django.http import Http404, HttpResponseNotAllowed
 from django.views.generic import View, UpdateView, CreateView, DeleteView, FormView
 from django.shortcuts import redirect
 
-from braces.views import (
-    PermissionRequiredMixin,
-    LoginRequiredMixin,
-    GroupRequiredMixin,
-)
+from braces.views import PermissionRequiredMixin
 from social.apps.django_app.default.models import UserSocialAuth
 
 from core.utils import now, current_semester, get_default_num_shifts, get_default_num_tours
+from core.views import BoardOnlyMixin
 from profiles.models import Person, OverrideRequirement, InactiveSemester
 from profiles.forms import PersonForm, SpecialRequirementsForm
 from profiles.utils import set_groups_by_position, member_latest_semester
 
 
-class EditPersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, UpdateView):
+class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     permission_required = 'profiles.change_person'
-    group_required = 'Board Members'
     model = Person
     form_class = PersonForm
-    template_name = 'profiles/edit_person.html'
+    template_name = 'profiles/person_form.html'
+
+    def get_form(self, form_class):
+        form = super(EditPersonView, self).get_form(form_class)
+        form.data = form.data.copy()
+        try:
+            phone = form.data['phone']
+            # add the '+1' if necessary
+            if phone[0] != '+':
+                phone = u'+1{}'.format(phone)
+
+            form.data['phone'] = phone
+        except:
+            pass
+        return form
+
 
     def get_context_data(self, **kwargs):
         context = super(EditPersonView, self).get_context_data(**kwargs)
@@ -30,7 +41,7 @@ class EditPersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredM
         year = now().year
         initial_data = {'semester': semester, 'year': year, 'person': self.object}
         try:
-            override_req = OverrideRequirement.objects.filter(semester=semester, year=year, person=self.object)
+            override_req = OverrideRequirement.objects.get(semester=semester, year=year, person=self.object)
             initial_data['tours_required'] = override_req.tours_required
             initial_data['shifts_required'] = override_req.shifts_required
         except OverrideRequirement.DoesNotExist:
@@ -38,20 +49,63 @@ class EditPersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredM
         context['special_requirements_form'] = SpecialRequirementsForm(initial_data)
         return context
 
+    def form_valid(self, form):
+        form.save()
+
+        social_auth = UserSocialAuth.objects.get(user=self.object.user)
+
+        # create user and social auth objects
+        username = self.object.harvard_email.split('@')[0]
+        user = self.object.user
+        user.username = username
+        user.first_name = self.object.first_name
+        user.last_name = self.object.last_name
+        user.email = self.object.harvard_email
+        user.save()
+
+        social_auth.uid = self.object.harvard_email
+        social_auth.save()
+
+        # set appropriate groups based on position
+        set_groups_by_position(self.object)
+
+        if self.object.site_admin is True:
+            user.is_staff = True
+            user.is_superuser = True
+        else:
+            user.is_staff = False
+            user.is_superuser = False
+
+        user.save()
+
+        return super(EditPersonView, self).form_valid(form)
+
     def get_success_url(self):
         year, semester = member_latest_semester(self.object)
         return reverse_lazy('profiles:roster', kwargs={'year': year, 'semester': semester})
 
 
-class CreatePersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, CreateView):
+class CreatePersonView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
     permission_required = 'profiles.add_person'
-    group_required = 'Board Members'
     model = Person
     form_class = PersonForm
     template_name = 'profiles/person_form.html'
 
+    def post(self, request, *args, **kwargs):
+        try:
+            phone = request.POST['phone']
+            # add the '+1' if necessary
+            if phone[0] != '+':
+                phone = u'+1{}'.format(phone)
+
+            request.POST['phone'] = phone
+        except:
+            pass
+
+        return super(CreatePersonView, self).post(self, request, *args, **kwargs)
+
     def form_valid(self, form):
-        ret = super(CreatePersonView, self).form_valid(form)
+        form.save()
 
         # create user and social auth objects
         username = self.object.harvard_email.split('@')[0]
@@ -61,7 +115,7 @@ class CreatePersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequire
 
         UserSocialAuth.objects.create(user=user, provider='google-oauth2', uid=self.object.harvard_email)
 
-        # set appropraite groups based on position
+        # set appropriate groups and status based on position
         set_groups_by_position(self.object)
 
         if self.object.site_admin is True:
@@ -69,16 +123,15 @@ class CreatePersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequire
             user.is_superuser = True
             user.save()
 
-        return ret
+        return super(CreatePersonView, self).form_valid(form)
 
     def get_success_url(self):
         year, semester = member_latest_semester(self.object)
         return reverse_lazy('profiles:roster', kwargs={'year': year, 'semester': semester})
 
 
-class DeletePersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, DeleteView):
+class DeletePersonView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     permission_required = 'profiles.delete_person'
-    group_required = 'Board Members'
     model = Person
     form = PersonForm
 
@@ -87,13 +140,12 @@ class DeletePersonView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequire
         return reverse_lazy('profiles:roster', kwargs={'year': year, 'semester': semester})
 
 
-class UpdateSpecialRequirementsView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, FormView):
+class UpdateSpecialRequirementsView(PermissionRequiredMixin, BoardOnlyMixin, FormView):
     """
     Processes updating special requirements from the edit person page
     Only allows POST
     """
     permission_required = 'profiles.change_person'
-    group_required = 'Board Members'
     form = SpecialRequirementsForm
 
     def get(self, request, *args, **kwargs):
@@ -141,13 +193,12 @@ class UpdateSpecialRequirementsView(PermissionRequiredMixin, LoginRequiredMixin,
         return redirect('profiles:person-edit', kwargs={'pk': pk})
 
 
-class CreateInactiveSemesterView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, View):
+class CreateInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, View):
     """
     Processes updating inactive semesters from the edit person page
     Only allows POST
     """
     permission_required = 'profiles.create_inactivesemester'
-    group_required = 'Board Members'
 
     def post(self, request, *args, **kwargs):
         try:
@@ -181,9 +232,8 @@ class CreateInactiveSemesterView(PermissionRequiredMixin, LoginRequiredMixin, Gr
         return redirect('profiles:person-edit', kwargs={'pk': person_pk})
 
 
-class DeleteInactiveSemesterView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, DeleteView):
+class DeleteInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     permission_required = 'profiles.delete_inactivesemester'
-    group_required = 'Board Members'
     model = InactiveSemester
 
     def get_success_url(self):

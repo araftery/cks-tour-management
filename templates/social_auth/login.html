@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="row">
+	<div class="col-sm-4 col-sm-offset-4 login-logo-container">
+		<img src="{% static "img/full-logo.png" %}" />
+	</div>
+</div>
+<div class="row">
+	<div class="col-sm-4 col-sm-offset-4 login-btn-container">
+		<a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.GET.next }}" class="login_btn btn btn-danger login-btn"><div class="icon-google"></div><div class="icon-border"></div>Login with @College</a>
+	</div>
+</div>
+{% endblock %}

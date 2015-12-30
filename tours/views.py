@@ -10,21 +10,18 @@ from django.shortcuts import render, redirect
 from django.views.generic import View, UpdateView, CreateView, DeleteView
 
 from braces.views import (
-    LoginRequiredMixin,
-    GroupRequiredMixin,
     PermissionRequiredMixin,
     MultiplePermissionsRequiredMixin,
 )
-from extra_views import ModelFormSetView
 
+from core.views import BoardOnlyMixin
 from core import utils
-from tours.models import Tour, CanceledDay, DefaultTour, InitializedMonth
-from tours.forms import TourForm, ChooseMonthForm, MonthEditForm
+from tours.models import Tour, CanceledDay, DefaultTour, InitializedMonth, OpenMonth
+from tours.forms import TourForm, ChooseMonthForm, OpenMonthForm
 from tours import utils as tours_utils
 
 
-class MonthView(LoginRequiredMixin, GroupRequiredMixin, View):
-    group_required = 'Board Members'
+class MonthView(BoardOnlyMixin, View):
 
     def get(self, request, *args, **kwargs):
         now = utils.now()
@@ -39,7 +36,9 @@ class MonthView(LoginRequiredMixin, GroupRequiredMixin, View):
         is_open, date_closes = tours_utils.month_is_open(month=month, year=year, return_tuple=True)
 
         if is_open:
-            public_url = request.build_absolute_uri(reverse_lazy('public:month', kwargs={'year': year, 'month': month}))
+            public_url = None
+            # TODO
+            #public_url = request.build_absolute_uri(reverse_lazy('public:month', kwargs={'year': year, 'month': month}))
         else:
             public_url = None
 
@@ -63,20 +62,15 @@ class MonthView(LoginRequiredMixin, GroupRequiredMixin, View):
             'open_eligible': open_eligible,
             'public_url': public_url
         }
-        return render(request, 'tours/month.html', context)
+
+        if kwargs.get('print') is True:
+            return render(request, 'tours/month_print.html', context)
+        else:
+            return render(request, 'tours/month.html', context)
 
 
-class MonthEditView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, ModelFormSetView):
+class EditTourView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     permission_required = 'tours.change_tour'
-    group_required = 'Board Members'
-    model = Tour
-    form = MonthEditForm
-    queryset = None
-
-
-class EditTourView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, UpdateView):
-    permission_required = 'tours.change_tour'
-    group_required = 'Board Members'
     model = Tour
     form_class = TourForm
     template_name = 'tours/tour_form.html'
@@ -85,9 +79,8 @@ class EditTourView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMix
         return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
 
 
-class CreateTourView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, CreateView):
+class CreateTourView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
     permission_required = 'tours.add_tour'
-    group_required = 'Board Members'
     model = Tour
     form_class = TourForm
     template_name = 'tours/tour_form.html'
@@ -96,20 +89,17 @@ class CreateTourView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredM
         return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
 
 
-class DeleteTourView(PermissionRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, DeleteView):
+class DeleteTourView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     permission_required = 'tours.delete_tour'
-    group_required = 'Board Members'
     model = Tour
-    form = TourForm
 
     def get_success_url(self):
         return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
 
 
-class InitializeMonthView(MultiplePermissionsRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, View):
-    group_required = 'Board Members'
+class InitializeMonthView(MultiplePermissionsRequiredMixin, BoardOnlyMixin, View):
     permissions = {
-        "all": ('tours.add_canceledday', 'tours.add_initializedmonth',),
+        "all": ('tours.add_tour', 'tours.add_canceledday', 'tours.add_initializedmonth',),
         "any": (),
     }
 
@@ -200,11 +190,10 @@ class InitializeMonthView(MultiplePermissionsRequiredMixin, LoginRequiredMixin, 
 
         # mark month as initialized
         initialized_month = InitializedMonth.objects.create(month=month, year=year)
-        return redirect('tours:edit-month', month=month, year=year)
+        return redirect('tours:month', month=month, year=year)
 
 
-class UninitializeMonthView(MultiplePermissionsRequiredMixin, LoginRequiredMixin, GroupRequiredMixin, View):
-    group_required = 'Board Members'
+class UninitializeMonthView(MultiplePermissionsRequiredMixin, BoardOnlyMixin, View):
     permissions = {
         "all": ('tours.delete_canceledday', 'tours.delete_initializedmonth', 'tours.delete_tour',),
         "any": (),
@@ -214,6 +203,7 @@ class UninitializeMonthView(MultiplePermissionsRequiredMixin, LoginRequiredMixin
         try:
             month = kwargs.get('month')
             year = kwargs.get('year')
+            year, month = utils.parse_year_month(year, month, default=None)
             obj = InitializedMonth.objects.get(month=month, year=year)
         except InitializedMonth.DoesNotExist:
             raise Http404
@@ -236,4 +226,70 @@ class UninitializeMonthView(MultiplePermissionsRequiredMixin, LoginRequiredMixin
         # delete initialization object
         obj.delete()
 
-        return redirect('tours:month', {'month': kwargs.get('month'), 'year': kwargs.get('year')})
+        # close month if open
+        OpenMonth.objects.filter(month=month, year=year).delete()
+
+        return redirect('tours:month', month=month, year=year)
+
+
+class CreateOpenMonthView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
+    permission_required = 'tours.add_openmonth'
+    model = OpenMonth
+    form_class = OpenMonthForm
+    template_name = 'tours/open_month_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateOpenMonthView, self).get_context_data(**kwargs)
+        context['year'] = self.kwargs.get('year')
+        context['month'] = self.kwargs.get('month')
+
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('tours:month', kwargs={'year': self.object.year, 'month': self.object.month})
+
+    def get_initial(self):
+        now = utils.now()
+        closes_default = (now + datetime.timedelta(days=7)).replace(hour=17, minute=0, second=0, microsecond=0)
+        month = self.kwargs.get('month')
+        year = self.kwargs.get('year')
+        year, month = utils.parse_year_month(year, month, default=None)
+        return {'opens': now, 'closes': closes_default, 'month': month, 'year': year}
+
+
+class EditOpenMonthView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
+    permission_required = 'tours.update_openmonth'
+    model = OpenMonth
+    form_class = OpenMonthForm
+    template_name = 'tours/open_month_form.html'
+
+    def get_object(self, queryset):
+        latest = OpenMonth.objects.filter(month=self.month, year=self.year).order_by('closing').last()
+
+        if not latest:
+            raise Http404
+
+        return latest
+
+    def get_context_data(self, **kwargs):
+        context = super(EditOpenMonthView, self).get_context_data(**kwargs)
+        context['year'] = self.kwargs.get('year')
+        context['month'] = self.kwargs.get('month')
+
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+
+
+class CloseMonthView(PermissionRequiredMixin, BoardOnlyMixin, View):
+    permission_required = 'tours.delete_openmonth'
+
+    def post(self, request, *args, **kwargs):
+        month = kwargs.get('month')
+        year = kwargs.get('year')
+        year, month = utils.parse_year_month(year, month, default=None)
+
+        OpenMonth.objects.filter(month=month, year=year).delete()
+
+        return redirect('tours:month', year=year, month=month)

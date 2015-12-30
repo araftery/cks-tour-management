@@ -1,21 +1,21 @@
 ## Views to Move
 [ ] text_response
-[ ] month_shifts
-    [ ] view
-    [ ] template
+[x] month_shifts
+    [x] view
+    [x] template
 [x] month
     [x] view
     [x] template
-[ ] print_month
-    [ ] view
-    [ ] template
-[ ] tour
+[x] print_month
+    [x] view
+    [x] template
+[x] tour
     [x] view
     [ ] template
-    [ ] May be an issue with time handling. See former implementation
-[ ] new_tour
+    [x] May be an issue with time handling. See former implementation
+[x] new_tour
     [x] view
-    [ ] template
+    [x] template
 [ ] delete_tour
     [x] view
     [ ] template
@@ -30,13 +30,13 @@
 [ ] roster
     [ ] view
     [ ] template
-[ ] shift
+[x] shift
     [x] view
-    [ ] template
-[ ] all_shifts
+    [x] template
+[-] all_shifts - NOT TRANSFER
     [ ] view
     [ ] template
-[ ] delete_shift
+[x] delete_shift
     [x] view
     [ ] template
 [ ] new_shift
@@ -60,11 +60,11 @@
 [ ] edit_month_initialization
     [ ] view
     [ ] template
-[ ] uninitialize_month
-    [ ] view
-    [ ] template
+[x] uninitialize_month
+    [x] view
+    [x] template
 [ ] settings_page
-    [ ] view
+    [x] view
     [ ] template
 [ ] default_tour
     [ ] view
@@ -88,9 +88,12 @@
     [ ] view
     [ ] template
 [ ] open_month
-    [ ] view
+    [x] view
     [ ] template
 [ ] close_month
-    [ ] view
+    [x] view
     [ ] template
 [ ] Create default settings in dataabse
+[ ] replace logo
+[ ] Add public url when month is open
+[ ] only superusers can change superuser status

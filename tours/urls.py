@@ -10,14 +10,15 @@ urlpatterns = patterns('',
         name='month',
     ),
     url(
+        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/print/$',
+        view=views.MonthView.as_view(),
+        name='month-print',
+        kwargs={'print': True},
+    ),
+    url(
         regex=r'^month/$',
         view=views.MonthView.as_view(),
         name='month-noargs',
-    ),
-    url(
-        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/edit/$',
-        view=views.MonthEditView.as_view(),
-        name='month-edit',
     ),
     url(
         regex=r'^(?P<pk>\d+)/edit/$',
@@ -37,11 +38,31 @@ urlpatterns = patterns('',
     url(
         regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/initialize/$',
         view=views.InitializeMonthView.as_view(),
-        name='month-initialize',
+        name='initialize-month',
+    ),
+    url(
+        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/uninitialize/$',
+        view=views.UninitializeMonthView.as_view(),
+        name='uninitialize-month',
     ),
     url(
         regex=r'^month/initialize/$',
         view=views.InitializeMonthView.as_view(),
         name='month-initialize-noargs',
+    ),
+    url(
+        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/open/$',
+        view=views.CreateOpenMonthView.as_view(),
+        name='open-month',
+    ),
+    url(
+        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/open/edit/$',
+        view=views.CreateOpenMonthView.as_view(),
+        name='open-month-edit',
+    ),
+    url(
+        regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/close/$',
+        view=views.CloseMonthView.as_view(),
+        name='close-month',
     ),
 )

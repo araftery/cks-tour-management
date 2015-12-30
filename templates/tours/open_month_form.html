@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load staticfiles crispy_forms_tags core_tags %}
+
+{% block title %} CKS Tour Management: Open Month {% endblock %}
+
+{% block content %}
+<h1>Open {{ month|month_name }} {{ year }}</h1>
+
+{% crispy form %}
+
+<script>
+$(function() {
+    $('.datepicker').datetimepicker({
+        ampm: true,
+        dateFormat: 'mm/dd/yy',
+        timeFormat: 'hh:mm tt',
+        stepMinute: 5
+    });
+
+    $('.timepicker').timepicker({
+        ampm: true,
+        timeFormat: 'hh:mm tt',
+        stepMinute: 5
+    });
+});
+</script>
+
+{% endblock %}

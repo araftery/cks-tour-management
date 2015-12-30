@@ -38,33 +38,6 @@ def current_semester(now_obj=None):
         return None
 
 
-def class_years(semester=None, year=None, bookends_only=False):
-    """
-    Given a semester and year, returns a tuple of the class years currently in school, in ascending order.
-    >>> class_years('fall', 2013)
-    >>> (2014, 2015, 2016, 2017)
-    """
-    if semester is None:
-        semester = current_semester()
-    if year is None:
-        year = now().year
-    else:
-        year = int(year)
-        semester = semester.lower()
-
-    if semester == 'fall':
-        years = range(year + 1, year + 5)
-    elif semester == 'spring':
-        years = range(year, year + 4)
-    else:
-        raise ValueError('Semester must either fall or spring.')
-
-    if bookends_only is True:
-        return (years[0], years[3])
-    else:
-        return years
-
-
 def parse_year_month(year, month, default='now'):
     if default == 'now':
         default = now()
@@ -100,6 +73,33 @@ def add_months(sourcedate, months, return_datetime=False):
         return datetime.date(year, month, day)
     else:
         return datetime.datetime(year, month, day)
+
+
+def class_years(semester=None, year=None, bookends_only=False):
+    """
+    Given a semester and year, returns a tuple of the class years currently in school, in ascending order.
+    >>> class_years('fall', 2013)
+    >>> (2014, 2015, 2016, 2017)
+    """
+    if semester is None:
+        semester = current_semester()
+    if year is None:
+        year = now().year
+    else:
+        year = int(year)
+        semester = semester.lower()
+
+    if semester == 'fall':
+        years = range(year + 1, year + 5)
+    elif semester == 'spring':
+        years = range(year, year + 4)
+    else:
+        raise ValueError('Semester must either fall or spring.')
+
+    if bookends_only is True:
+        return (years[0], years[3])
+    else:
+        return years
 
 
 def get_default_num_tours():

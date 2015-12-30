@@ -245,3 +245,8 @@ body.login {
 .edit-btn:hover {
   color: #c0282e;
 }
+.top-bottom-spacing
+{
+  margin: 10px 0;
+}
+

@@ -87,6 +87,16 @@ class Person(models.Model):
     # custom manager
     objects = PersonQuerySet.as_manager()
 
+    def phone_display(self):
+        """
+        Removes the +1 from the phone number if it exists.
+        """
+        phone = unicode(self.phone)
+        if phone[:2] == '+1':
+            return phone[2:]
+        else:
+            return phone
+
     @property
     def is_active(self):
         if self._default_manager.active().current_members().filter(pk=self.pk):

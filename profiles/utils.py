@@ -1,4 +1,4 @@
-from djang.contrib.auth.models import Group
+from django.contrib.auth.models import Group
 from django.db.models import Q
 
 from core.utils import now, current_semester
@@ -30,8 +30,12 @@ def set_groups_by_position(person):
         'Other Board Member': ('Board Members',),
     }
 
-    for group in position_to_groups[position]:
-        Group.objects.get(name=group).user_set.add(user)
+    try:
+        for group in position_to_groups[position]:
+            Group.objects.get(name=group).user_set.add(user)
+    except KeyError:
+        # position has no defined groups
+        pass
 
 
 def member_latest_semester(person):
@@ -43,7 +47,7 @@ def member_latest_semester(person):
     Raises a ValueError if something goes wrong (e.g., a person in the db is not yet a member,
     i.e. member_since > current year).
     """
-    member_since = person.member_since
+    member_since = person.member_since_year
     grad_year = person.year
 
     semester = current_semester()

@@ -1,5 +1,10 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.conf import settings
+from django.db.models import Q
 from django.forms import ModelChoiceField
+from django.utils.translation import ugettext as _
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Field, Submit, Div, Layout
@@ -26,7 +31,7 @@ class PersonForm(forms.ModelForm):
         self.helper.label_class = 'control-label'
         self.helper.html5_required = True
 
-        self.fields['notes'] = forms.Textarea()
+        self.fields['notes'].widget = forms.Textarea()
         self.fields['email'].label = 'Primary email'
         self.fields['phone'].label = 'Phone number'
         self.fields['member_since_year'].label = 'Member of CKS since year'
@@ -50,13 +55,44 @@ class PersonForm(forms.ModelForm):
             ),
         )
 
+    def clean_harvard_email(self):
+        harvard_email = self.cleaned_data.get('harvard_email')
+
+        if harvard_email is None:
+            raise ValidationError(_('A Harvard email is required.'), code='invalid')
+
+        harvard_email = harvard_email.strip().lower()
+
+        if harvard_email == '':
+            raise ValidationError(_('A Harvard email is required.'), code='invalid')
+
+        # make sure it's a valid email address
+        validate_email(harvard_email)
+
+        # make sure no existing users have this address
+        qs = Person.objects.filter(Q(email=harvard_email) | Q(harvard_email=harvard_email))
+        if self.instance.pk is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs:
+            raise ValidationError(_('A member with this email address already exists.'), code='invalid')
+
+        # make sure it's a valid harvard address
+        try:
+            if harvard_email.split('@', 1)[1] not in settings.VALID_HARVARD_DOMAINS:
+                raise ValidationError(('Please enter a valid @college email address.'), code='invalid')
+        except IndexError:
+            raise ValidationError(('Please enter a valid @college email address.'), code='invalid')
+
+        return harvard_email
+
     class Meta:
         model = Person
         fields = ('first_name', 'last_name', 'email', 'harvard_email', 'phone', 'year', 'member_since_year', 'position', 'site_admin', 'house', 'notes',)
 
 
 class SpecialRequirementsForm(forms.ModelForm):
-    def __init__(self, year, semester, person, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(SpecialRequirementsForm, self).__init__(*args, **kwargs)
 
         self.helper = FormHelper()
@@ -67,10 +103,6 @@ class SpecialRequirementsForm(forms.ModelForm):
 
         self.fields['tours_required'].placeholder = 'Leave empty for default'
         self.fields['shifts_required'].placeholder = 'Leave empty for default'
-
-        self.fields['year'].value = year
-        self.fields['semester'].value = semester
-        self.fields['person'].value = person
 
         self.helper.layout = Layout(
             Field('tours_required'),

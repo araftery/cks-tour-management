@@ -63,10 +63,11 @@
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
 
-            <li class="dropdown {# {% navactive request 'tours:month,tours:month-noargs,tours:month-initialize,tours:month-initialize-noargs' %} #}">
+            <li class="dropdown {% navactive request 'tours:month,tours:month-print,tours:month-noargs,tours:month-initialize,tours:month-initialize-noargs,shifts:month,shifts:month-noargs' %}">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">Months <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 <li class="{% navactive request 'tours:month, tours:month-noargs' %}"><a href="{% url 'tours:month-noargs' %}">View Month (Tours)</a></li>
+                <li class="{% navactive request 'shifts:month, shifts:month-noargs' %}"><a href="{% url 'shifts:month-noargs' %}">View Month (Shifts)</a></li>
                   <li class="{% navactive request 'tours:month-initialize-noargs,tours:month-initialize' %}"><a href="{% url 'tours:month-initialize-noargs' %}">Initialize Month Tours</a></li>
               </ul>
             </li>
@@ -75,6 +76,13 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tours <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   <li class="{% navactive request 'tours:tour-new' %}"><a href="{% url 'tours:tour-new' %}">New Tour</a></li>
+                </ul>
+              </li>
+
+                <li class="dropdown {% navactive request 'shifts:shift-new, shifts:shift-edit, shifts:shift-delete' %}">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Shifts <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li class="{% navactive request 'shifts:shift-new' %}"><a href="{% url 'shifts:shift-new' %}">New Shift</a></li>
                 </ul>
               </li>
           </ul>
@@ -92,7 +100,40 @@
       {% block content %}{% endblock %}
     </div><!-- /.container -->
 
-    
+    <script>
+
+function post_request(action, method, input) {
+    'use strict';
+    var form;
+    form = $('<form />', {
+        action: action,
+        method: method,
+        style: 'display: none;'
+    });
+    form.append("{% csrf_token %}");
+    if (typeof input !== 'undefined' && input !== null) {
+        $.each(input, function (name, value) {
+            $('<input />', {
+                type: 'hidden',
+                name: name,
+                value: value
+            }).appendTo(form);
+        });
+    }
+    form.appendTo('body').submit();
+}
+
+$('.post-btn').on('click', function(e){
+    e.preventDefault();
+    var url = $(this).attr('href');
+    var action = $(this).data('action');
+    var proceed = confirm('Are you sure you want to ' + action + '?');
+    if (proceed == true)
+    {
+        post_request(url, 'post', {});
+    }
+});
+    </script>
 
   </body>
 </html>

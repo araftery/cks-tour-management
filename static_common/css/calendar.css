@@ -81,6 +81,9 @@ li.tour a:hover table td {
   background: #c0282e !important;
   color: #fff;
 }
+li.tour a:hover {
+  text-decoration: none;
+}
 table.month {
   margin-bottom: 20px;
 }

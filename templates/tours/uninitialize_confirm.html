@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load staticfiles core_tags %}
+
+{% block title %} CKS Tour Management: Uninitialize {{month|month_name}} {{year}} {% endblock %}
+
+{% block content %}
+<h1>
+    Uninitialize {{month|month_name}} {{year}}
+</h1>
+
+<div class="panel panel-danger">
+        <div class="panel-heading">Warning: this action is irreversible</div>
+        <div class="panel-body">
+            Unitializing this month will remove all tours created during the initialization process. Are you sure you want to continue?
+
+            <div class="top-bottom-spacing">
+            <a class="btn btn-danger post-btn" href="{% url 'tours:uninitialize-month' month=month year=year %}" data-action="uninitialize this month">Yes, uninitialize this month</a>
+            <a class="btn btn-info" href="{% url 'tours:month' month=month year=year %}">No, return</a>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

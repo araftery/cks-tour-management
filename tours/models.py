@@ -85,7 +85,7 @@ class DefaultTour(models.Model):
 
 
 class OpenMonth(models.Model):
-    month = models.IntegerField(max_length=1)
+    month = models.IntegerField(max_length=2)
     year = models.IntegerField(max_length=4)
     opens = models.DateTimeField()
     closes = models.DateTimeField()
@@ -95,7 +95,7 @@ class OpenMonth(models.Model):
 
 
 class InitializedMonth(models.Model):
-    month = models.IntegerField(max_length=1)
+    month = models.IntegerField(max_length=2)
     year = models.IntegerField(max_length=4)
 
     def __unicode__(self):

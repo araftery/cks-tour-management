@@ -94,37 +94,33 @@
             </div>
 
             <div class="panel-body">
-            {% comment %}
-            TODO
-            {% if perms.tours.change_tour %}
-                <a href="{% url 'edit-tours:month' year month %}" class="btn btn-block btn-danger">Edit Month</a>
-            {% endif %}
-
             {% if month_initialized %}
-                <a href="{% url 'print-tours:month' year month %}" class="btn btn-block btn-danger">Print Info Office Tours</a>
+                <a href="{% url 'tours:month-print' year=year month=month %}" class="btn btn-block btn-danger">Print Info Office Tours</a>
             {% endif %}
 
             {% if perms.tours.add_initializedmonth %}
                 {% if not month_initialized %}
-                    <a href="{% url 'initialize-tours:month' year month %}" class="btn btn-block btn-danger">Initialize Month</a>
+                    <a href="{% url 'tours:initialize-month' year month %}" class="btn btn-block btn-danger">Initialize Month</a>
                 {% else %}
+                    {% comment %}
+                    TODO
                     <a href="{% url 'edit-month-initialization-url' year month %}" class="btn btn-block btn-danger">Edit Month Initialization</a>
+                    {% endcomment %}
+                    <a href="{% url 'tours:uninitialize-month' year month %}" class="btn btn-block btn-danger">Uninitialize Month</a>
                 {% endif %}
             {% endif %}
 
-            TODO
             {% if open_eligible and perms.tours.add_openmonth and perms.tours.change_openmonth %}
                 {% if is_open %}
-                    <a href="{% url 'open-tours:month' year month %}" class="btn btn-block btn-danger">Edit Closing Time</a>
+                    <a href="{% url 'tours:open-month-edit' year month %}" class="btn btn-block btn-danger">Edit Closing Time</a>
                 {% else %}
-                    <a href="{% url 'open-tours:month' year month %}" class="btn btn-block btn-danger">Open Month</a>
+                    <a href="{% url 'tours:open-month' year month %}" class="btn btn-block btn-danger">Open Month</a>
                 {% endif %}
             {% endif %}
 
             {% if is_open and perms.tours.delete_openmonth %}
-                <a href="{% url 'close-tours:month' year month %}" class="btn btn-block btn-warning">Close Month Immediately</a>
+                <a href="{% url 'tours:close-month' year month %}" class="btn btn-block btn-warning post-btn" data-action="close this month">Close Month Immediately</a>
             {% endif %}
-            {% endcomment %}
             </div>
         </div>
     </div>

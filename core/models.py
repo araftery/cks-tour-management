@@ -15,3 +15,10 @@ class Setting(models.Model):
 
     def __unicode__(self):
         return u'{}: {}'.format(self.name, self.value)
+
+    def save(self, *args, **kwargs):
+        # avoid ciruclar import
+        from core.utils.date import now
+        self.time_set = now()
+
+        return super(Setting, self).save(*args, **kwargs)

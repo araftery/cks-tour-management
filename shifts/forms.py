@@ -18,8 +18,11 @@ class ShiftForm(forms.ModelForm):
         self.helper.label_class = 'control-label'
         self.helper.html5_required = True
         self.fields['person'] = ActiveMemberField()
+        self.fields['person'].required = False
         self.fields['source'] = forms.ChoiceField(choices=Shift.source_choices)
         self.fields['time'] = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'class': 'datepicker'}, format="%m/%d/%Y %I:%M %p"), input_formats=["%m/%d/%Y %I:%M %p"])
+
+        self.helper.form_action = './'
 
         self.helper.layout = Layout(
             Field('time'),
