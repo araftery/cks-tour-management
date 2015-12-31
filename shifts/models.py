@@ -3,6 +3,7 @@ import pytz
 from django.db import models
 
 from core import utils
+from tours.models import TaskQuerySet
 
 
 class Shift(models.Model):
@@ -26,6 +27,9 @@ class Shift(models.Model):
     late = models.BooleanField(default=False)
     length = models.IntegerField(max_length=3, blank=True, null=True)
     counts_for_requirements = models.BooleanField(default=True)
+
+    # custom manager
+    objects = TaskQuerySet.as_manager()
 
     def is_missed(self):
         if self.missed:

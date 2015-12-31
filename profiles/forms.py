@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse_lazy
 from django.core.validators import validate_email
 from django.conf import settings
 from django.db.models import Q
@@ -20,8 +21,57 @@ class ActiveMemberField(ModelChoiceField):
         return obj.full_name
 
 
-class PersonForm(forms.ModelForm):
+class DuesPaymentForm(forms.Form):
+    paid = forms.BooleanField()
+    pk = forms.IntegerField(widget=forms.HiddenInput)
 
+
+class BasePersonForm(forms.ModelForm):
+    def clean(self):
+        try:
+            year = int(self.cleaned_data.get('year'))
+            member_since_year = int(self.cleaned_data.get('member_since_year'))
+            if member_since_year > year:
+                raise ValidationError(_('Member since year must be less than or equal to graduation year.'), code='invalid')
+        except ValueError:
+            pass
+
+    def clean_harvard_email(self):
+        harvard_email = self.cleaned_data.get('harvard_email')
+
+        if harvard_email is None:
+            raise ValidationError(_('A Harvard email is required.'), code='invalid')
+
+        harvard_email = harvard_email.strip().lower()
+
+        if harvard_email == '':
+            raise ValidationError(_('A Harvard email is required.'), code='invalid')
+
+        # make sure it's a valid email address
+        validate_email(harvard_email)
+
+        # make sure no existing users have this address
+        qs = Person.objects.filter(Q(email=harvard_email) | Q(harvard_email=harvard_email))
+        if self.instance.pk is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs:
+            raise ValidationError(_('A member with this email address already exists.'), code='invalid')
+
+        # make sure it's a valid harvard address
+        try:
+            if harvard_email.split('@', 1)[1] not in settings.VALID_HARVARD_DOMAINS:
+                raise ValidationError(('Please enter a valid Harvard email address.'), code='invalid')
+        except IndexError:
+            raise ValidationError(('Please enter a valid Harvard email address.'), code='invalid')
+
+        return harvard_email
+
+    class Meta:
+        model = Person
+
+
+class PersonForm(BasePersonForm):
     def __init__(self, *args, **kwargs):
         super(PersonForm, self).__init__(*args, **kwargs)
 
@@ -52,43 +102,17 @@ class PersonForm(forms.ModelForm):
 
             Div(
                 Submit('submit', 'Submit', css_class="btn btn-danger"),
+                css_class='button_container',
             ),
         )
 
-    def clean_harvard_email(self):
-        harvard_email = self.cleaned_data.get('harvard_email')
-
-        if harvard_email is None:
-            raise ValidationError(_('A Harvard email is required.'), code='invalid')
-
-        harvard_email = harvard_email.strip().lower()
-
-        if harvard_email == '':
-            raise ValidationError(_('A Harvard email is required.'), code='invalid')
-
-        # make sure it's a valid email address
-        validate_email(harvard_email)
-
-        # make sure no existing users have this address
-        qs = Person.objects.filter(Q(email=harvard_email) | Q(harvard_email=harvard_email))
-        if self.instance.pk is not None:
-            qs = qs.exclude(pk=self.instance.pk)
-
-        if qs:
-            raise ValidationError(_('A member with this email address already exists.'), code='invalid')
-
-        # make sure it's a valid harvard address
-        try:
-            if harvard_email.split('@', 1)[1] not in settings.VALID_HARVARD_DOMAINS:
-                raise ValidationError(('Please enter a valid @college email address.'), code='invalid')
-        except IndexError:
-            raise ValidationError(('Please enter a valid @college email address.'), code='invalid')
-
-        return harvard_email
-
-    class Meta:
-        model = Person
+    class Meta(BasePersonForm.Meta):
         fields = ('first_name', 'last_name', 'email', 'harvard_email', 'phone', 'year', 'member_since_year', 'position', 'site_admin', 'house', 'notes',)
+
+
+class PersonBulkForm(BasePersonForm):
+    class Meta(BasePersonForm.Meta):
+        fields = ('first_name', 'last_name', 'email', 'harvard_email', 'phone', 'year', 'member_since_year', 'house',)
 
 
 class SpecialRequirementsForm(forms.ModelForm):
@@ -101,20 +125,49 @@ class SpecialRequirementsForm(forms.ModelForm):
         self.helper.label_class = 'control-label'
         self.helper.html5_required = True
 
-        self.fields['tours_required'].placeholder = 'Leave empty for default'
-        self.fields['shifts_required'].placeholder = 'Leave empty for default'
+        self.fields['tours_required'].required = False
+        self.fields['shifts_required'].required = False
+
+        self.helper.form_action = reverse_lazy('profiles:special-requirements-update')
 
         self.helper.layout = Layout(
-            Field('tours_required'),
-            Field('shifts_required'),
+            Field('tours_required', placeholder="Leave empty for default"),
+            Field('shifts_required', placeholder="Leave empty for default"),
             Field('year', type='hidden'),
             Field('semester', type='hidden'),
             Field('person', type='hidden'),
 
             Div(
                 Submit('submit', 'Submit', css_class="btn btn-info"),
+                css_class='button_container',
             ),
         )
+
+    def clean_tours_required(self):
+        tours_required = self.cleaned_data.get('tours_required')
+
+        if tours_required is not None:
+            try:
+                tours_required = int(tours_required)
+            except:
+                raise ValidationError(_('Must be a valid integer.'))
+
+            if tours_required < 0:
+                raise ValidationError(_('Number must be greater than or equal to 0.'))
+        return tours_required
+
+    def clean_shifts_required(self):
+        shifts_required = self.cleaned_data.get('shifts_required')
+
+        if shifts_required is not None:
+            try:
+                shifts_required = int(shifts_required)
+            except:
+                raise ValidationError(_('Must be a valid integer.'))
+
+            if shifts_required < 0:
+                raise ValidationError(_('Number must be greater than or equal to 0.'))
+        return shifts_required
 
     class Meta:
         model = OverrideRequirement

@@ -17,7 +17,7 @@ from braces.views import (
 from core.views import BoardOnlyMixin
 from core import utils
 from tours.models import Tour, CanceledDay, DefaultTour, InitializedMonth, OpenMonth
-from tours.forms import TourForm, ChooseMonthForm, OpenMonthForm
+from tours.forms import TourForm, DefaultTourForm, ChooseMonthForm, OpenMonthForm
 from tours import utils as tours_utils
 
 
@@ -95,6 +95,34 @@ class DeleteTourView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+
+
+class EditDefaultTourView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
+    permission_required = 'tours.change_defaulttour'
+    model = DefaultTour
+    form_class = DefaultTourForm
+    template_name = 'tours/defaulttour_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('core:settings')
+
+
+class CreateDefaultTourView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
+    permission_required = 'tours.add_defaulttour'
+    model = DefaultTour
+    form_class = DefaultTourForm
+    template_name = 'tours/defaulttour_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('core:settings')
+
+
+class DeleteDefaultTourView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
+    permission_required = 'tours.delete_defaulttour'
+    model = DefaultTour
+
+    def get_success_url(self):
+        return reverse_lazy('core:settings')
 
 
 class InitializeMonthView(MultiplePermissionsRequiredMixin, BoardOnlyMixin, View):

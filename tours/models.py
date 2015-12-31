@@ -5,7 +5,21 @@ import pytz
 from django.conf import settings
 from django.db import models
 
-from core import utils
+from core import utils as core_utils
+
+
+class TaskQuerySet(models.QuerySet):
+    """
+    QuerySet for tours and shifts.
+    """
+    def semester(self, semester=None, year=None):
+        """
+        Includes only members who are inactive for the given semester and year
+        """
+        year, semester = core_utils.parse_year_semester(year=year, semester=semester)
+        start, end = core_utils.semester_bounds(semester=semester, year=year)
+
+        return self.filter(time__gte=start, time__lte=end)
 
 
 class Tour(models.Model):
@@ -34,8 +48,11 @@ class Tour(models.Model):
     # true if tour was made during the initialization process
     default_tour = models.BooleanField(default=False)
 
+    # custom manager
+    objects = TaskQuerySet.as_manager()
+
     def is_upcoming(self):
-        now = utils.now()
+        now = core_utils.now()
         if self.time > now:
             return True
         else:
@@ -49,7 +66,7 @@ class Tour(models.Model):
 
     @property
     def claim_eligible(self):
-        now = utils.now()
+        now = core_utils.now()
 
         # check if the month is open
         latest = OpenMonth.objects.filter(month=self.time.month, year=self.time.year).order_by('pk').last()
@@ -72,7 +89,7 @@ class DefaultTour(models.Model):
     source = models.CharField(max_length=500, default="Information Office", choices=Tour.source_choices)
     minute = models.IntegerField(max_length=2)
     hour = models.IntegerField(max_length=2)
-    day_num = models.IntegerField(max_length=1)
+    day_num = models.IntegerField(max_length=1, choices=list(enumerate(calendar.day_name)))
     notes = models.TextField(max_length=2000, blank=True)
     length = models.IntegerField(max_length=3, default=75)
 

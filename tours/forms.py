@@ -4,7 +4,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Field, Submit, Div, Layout
 
 from profiles.forms import ActiveMemberField
-from tours.models import Tour, OpenMonth
+from tours.models import Tour, DefaultTour, OpenMonth
 from tours import utils as tours_utils
 
 
@@ -24,6 +24,7 @@ class TourForm(forms.ModelForm):
         self.fields['source'] = forms.ChoiceField(choices=Tour.source_choices)
         self.fields['time'] = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'class': 'datepicker'}, format="%m/%d/%Y %I:%M %p"), input_formats=["%m/%d/%Y %I:%M %p"])
         self.fields['guide'].required = False
+        self.fields['length'].label = 'Length (minutes)'
 
         self.helper.form_action = './'
 
@@ -39,12 +40,50 @@ class TourForm(forms.ModelForm):
 
             Div(
                 Submit('submit', 'Submit', css_class="btn btn-danger"),
+                css_class='button_container',
             ),
         )
 
     class Meta:
         model = Tour
         fields = ('time', 'notes', 'guide', 'source', 'missed', 'late', 'counts_for_requirements', 'length',)
+
+
+class DefaultTourForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(DefaultTourForm, self).__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.form_class = 'form-horizontal'
+        # self.helper.form_id = 'article_form'
+        # self.helper.form_name = 'article_form'
+        self.helper.label_class = 'control-label'
+        self.helper.html5_required = True
+        self.fields['hour'].label = 'Hour (on a 24-hour clock)'
+        self.fields['day_num'].label = 'Day of the week'
+
+        self.helper.form_action = './'
+
+        self.helper.layout = Layout(
+            Field('day_num'),
+            Field('hour'),
+            Field('minute'),
+            Field('notes', placeholder="These notes will be sent to the tour guide in the tour reminder email. Include location or other special instructions here."),
+            Field('source'),
+            Field('length'),
+
+            Div(
+                Submit('submit', 'Submit', css_class="btn btn-danger"),
+                css_class='button_container',
+            ),
+        )
+
+    class Meta:
+        model = DefaultTour
+        fields = ('hour', 'minute', 'day_num', 'notes', 'source', 'length',)
+
 
 
 class ChooseMonthForm(forms.Form):
@@ -65,6 +104,7 @@ class ChooseMonthForm(forms.Form):
             Field('month', css_class='js-month'),
             Div(
                 Submit('submit', 'Submit', css_class="btn btn-danger"),
+                css_class='button_container',
             ),
         )
 

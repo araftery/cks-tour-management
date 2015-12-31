@@ -1,16 +1,18 @@
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth.models import User
-from django.http import Http404, HttpResponseNotAllowed
+from django.http import Http404, HttpResponseNotAllowed, HttpResponse
 from django.views.generic import View, UpdateView, CreateView, DeleteView, FormView
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 
 from braces.views import PermissionRequiredMixin
 from social.apps.django_app.default.models import UserSocialAuth
+from extra_views import ModelFormSetView
 
-from core.utils import now, current_semester, get_default_num_shifts, get_default_num_tours
+from core.utils import now, current_semester, get_default_num_shifts, get_default_num_tours, delta_semester, dues_required, parse_year_semester
 from core.views import BoardOnlyMixin
-from profiles.models import Person, OverrideRequirement, InactiveSemester
-from profiles.forms import PersonForm, SpecialRequirementsForm
+from profiles.models import Person, OverrideRequirement, InactiveSemester, DuesPayment
+from profiles.forms import PersonForm, SpecialRequirementsForm, PersonBulkForm, DuesPaymentForm
 from profiles.utils import set_groups_by_position, member_latest_semester
 
 
@@ -34,7 +36,6 @@ class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
             pass
         return form
 
-
     def get_context_data(self, **kwargs):
         context = super(EditPersonView, self).get_context_data(**kwargs)
         semester = current_semester()
@@ -47,6 +48,8 @@ class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
         except OverrideRequirement.DoesNotExist:
             pass
         context['special_requirements_form'] = SpecialRequirementsForm(initial_data)
+        context['semester'] = semester
+        context['year'] = year
         return context
 
     def form_valid(self, form):
@@ -145,8 +148,8 @@ class UpdateSpecialRequirementsView(PermissionRequiredMixin, BoardOnlyMixin, For
     Processes updating special requirements from the edit person page
     Only allows POST
     """
-    permission_required = 'profiles.change_person'
-    form = SpecialRequirementsForm
+    permission_required = 'profiles.add_overriderequirement'
+    form_class = SpecialRequirementsForm
 
     def get(self, request, *args, **kwargs):
         return HttpResponseNotAllowed(['POST'])
@@ -179,18 +182,17 @@ class UpdateSpecialRequirementsView(PermissionRequiredMixin, BoardOnlyMixin, For
             except OverrideRequirement.DoesNotExist:
                 pass
         else:
-            OverrideRequirement.objects.update_or_create(year=year, semester=semester, defaults=defaults)
+            OverrideRequirement.objects.update_or_create(year=year, semester=semester, person=person, defaults=defaults)
 
-        redirect_year, redirect_semester = member_latest_semester(self.object)
-        return redirect('profiles:roster', kwargs={'year': redirect_year, 'semester': redirect_semester})
+        return redirect('profiles:person-edit', pk=person.pk)
 
     def form_invalid(self, form):
         try:
-            person = form.data['person']
+            person = form.cleaned_data.get('person')
             pk = person.pk
         except:
             raise Http404
-        return redirect('profiles:person-edit', kwargs={'pk': pk})
+        return redirect('profiles:person-edit', pk=pk)
 
 
 class CreateInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, View):
@@ -198,7 +200,7 @@ class CreateInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, View):
     Processes updating inactive semesters from the edit person page
     Only allows POST
     """
-    permission_required = 'profiles.create_inactivesemester'
+    permission_required = 'profiles.add_inactivesemester'
 
     def post(self, request, *args, **kwargs):
         try:
@@ -229,7 +231,7 @@ class CreateInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, View):
                 # form is invalid, skip
                 pass
 
-        return redirect('profiles:person-edit', kwargs={'pk': person_pk})
+        return redirect('profiles:person-edit', pk=person_pk)
 
 
 class DeleteInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
@@ -238,3 +240,122 @@ class DeleteInactiveSemesterView(PermissionRequiredMixin, BoardOnlyMixin, Delete
 
     def get_success_url(self):
         return reverse_lazy('profiles:person-edit', kwargs={'pk': self.object.person.pk})
+
+
+class BulkCreatePersonView(PermissionRequiredMixin, BoardOnlyMixin, ModelFormSetView):
+    permission_required = 'profiles.add_person'
+
+    model = Person
+    form_class = PersonBulkForm
+    template_name = 'profiles/new_person_formset.html'
+    initial = []
+    extra = 40
+    success_url = reverse_lazy('profiles:roster-noargs')
+
+    def construct_formset(self):
+        formset = super(BulkCreatePersonView, self).construct_formset()
+        formset.data = formset.data.copy()
+        for key in formset.data:
+            if 'phone' in key:
+                try:
+                    phone = formset.data[key]
+                    # add the '+1' if necessary
+                    if phone[0] != '+':
+                        phone = u'+1{}'.format(phone)
+
+                    formset.data[key] = phone
+                except:
+                    pass
+
+        return formset
+
+    def get_queryset(self, *args, **kwargs):
+        return Person.objects.none()
+
+
+class RosterView(BoardOnlyMixin, View):
+    template_name = 'profiles/roster.html'
+
+    def get_people(self, semester, year, prefetch=True):
+        people = Person.objects.select_related().current_members(semester=semester, year=year).order_by('year', 'last_name', 'first_name')
+
+        if prefetch is True:
+            return people.prefetch_related('shifts', 'tours', 'overridden_requirements')
+        else:
+            return people
+
+    def get(self, request, *args, **kwargs):
+        year = kwargs.get('year')
+        semester = kwargs.get('semester')
+
+        year, semester = parse_year_semester(year=year, semester=semester)
+
+        prev_semester = delta_semester(semester=semester, year=year, delta=-1, as_dict=True)
+        next_semester = delta_semester(semester=semester, year=year, delta=1, as_dict=True)
+        collect_dues = dues_required(semester=semester, year=year)
+
+        people = self.get_people(semester=semester, year=year)
+
+        # cache requirements status results so that we don't have to keep hitting the db
+        for person in people:
+            dues_status = person.dues_status(semester=semester, year=year)
+            person.cached_status = {
+                'tours_status': person.tours_status(semester=semester, year=year),
+                'shifts_status': person.shifts_status(semester=semester, year=year),
+                'dues_status': dues_status,
+            }
+
+            # dues payments
+            if collect_dues:
+                paid = dues_status == 'complete'
+                person.dues_payment_form = DuesPaymentForm(initial={'pk': person.pk, 'paid': paid}, prefix='pk_{}'.format(person.pk))
+
+        context = {
+            'semester': semester,
+            'year': year,
+            'people': people,
+            'prev_semester': prev_semester,
+            'next_semester': next_semester,
+            'collect_dues': collect_dues,
+        }
+
+        return render(request, 'profiles/roster.html', context)
+
+    def post(self, request, *args, **kwargs):
+        year = kwargs.get('year')
+        semester = kwargs.get('semester')
+
+        year, semester = parse_year_semester(year=year, semester=semester)
+        people = self.get_people(semester=semester, year=year)
+
+        if not request.user.has_perm('profiles.add_duespayment') or not request.user.has_perm('profiles.delete_duespayment') or not request.user.has_perm('profiles.change_duespayment'):
+            raise PermissionDenied
+
+        to_be_saved = []
+
+        for person in people:
+            paid = request.POST.get('pk_{}-paid'.format(person.pk), False)
+            current_dues_payments = person.dues_payments.filter(semester=semester, year=year)
+
+            if current_dues_payments and paid is False:
+                current_dues_payments.delete()
+            elif not current_dues_payments and paid == 'on':
+                to_be_saved.append(DuesPayment(person=person, semester=semester, year=year))
+
+        if to_be_saved:
+            DuesPayment.objects.bulk_create(to_be_saved)
+
+        return redirect('profiles:roster', semester=semester, year=year)
+
+
+class RosterVCardView(BoardOnlyMixin, View):
+    def get(self, request, *args, **kwargs):
+        semester = kwargs.get('semester')
+        year = kwargs.get('year')
+        year, semester = parse_year_semester(year=year, semester=semester)
+        people = Person.objects.current_members(semester=semester, year=year)
+        output = '\n'.join(person.as_vcard() for person in people)
+        response = HttpResponse(output, content_type="text/x-vCard")
+        response['Content-Disposition'] = 'attachment; filename=cks_members_{}_{}.vcf'.format(semester, year)
+
+        return response

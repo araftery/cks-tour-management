@@ -21,19 +21,34 @@ urlpatterns = patterns('',
         name='month-noargs',
     ),
     url(
-        regex=r'^(?P<pk>\d+)/edit/$',
+        regex=r'^tour/(?P<pk>\d+)/edit/$',
         view=views.EditTourView.as_view(),
         name='tour-edit',
     ),
     url(
-        regex=r'^(?P<pk>\d+)/delete/$',
+        regex=r'^tour/(?P<pk>\d+)/delete/$',
         view=views.DeleteTourView.as_view(),
         name='tour-delete',
     ),
     url(
-        regex=r'^new/$',
+        regex=r'^tour/new/$',
         view=views.CreateTourView.as_view(),
         name='tour-new',
+    ),
+    url(
+        regex=r'^default-tour/(?P<pk>\d+)/edit/$',
+        view=views.EditDefaultTourView.as_view(),
+        name='defaulttour-edit',
+    ),
+    url(
+        regex=r'^default-tour/(?P<pk>\d+)/delete/$',
+        view=views.DeleteDefaultTourView.as_view(),
+        name='defaulttour-delete',
+    ),
+    url(
+        regex=r'^default-tour/new/$',
+        view=views.CreateDefaultTourView.as_view(),
+        name='defaulttour-new',
     ),
     url(
         regex=r'^month/(?P<year>\d{4})/(?P<month>\d{1,2})/initialize/$',

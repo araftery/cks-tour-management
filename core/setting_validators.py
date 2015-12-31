@@ -6,6 +6,8 @@ def validator_constructor(coercer, type_name):
         except:
             return {'valid': False, 'value': data, 'errors': ['You must enter a valid {}.'.format(type_name)]}
 
+    return validator
+
 
 def bool_validator(data):
     try:
@@ -24,20 +26,17 @@ def bool_validator(data):
         return {'valid': False, 'value': data, 'errors': ['You must enter either true or false.']}
 
 
-def semester_or_none_validator(data):
+def semester_or_never_validator(data):
     try:
         data = data.lower().strip()
 
-        if data == '':
-            data = None
-
-        if data in ['spring', 'fall', None]:
+        if data in ['spring', 'fall', 'both', 'never']:
             return {'valid': True, 'value': data, 'errors': []}
         else:
-            # it's not spring, fall or None, or the cleaning operation failed
+            # it's not spring, fall, both, or None, or the cleaning operation failed
             raise
     except:
-        return {'valid': False, 'value': data, 'errors': ['You must enter either fall, spring, or leave the field blank.']}
+        return {'valid': False, 'value': data, 'errors': ['You must enter either fall, spring, both, or never.']}
 
 
 def email_validator(data):
@@ -57,6 +56,6 @@ setting_validators = {
     'float': validator_constructor(float, 'floating point number'),
     'string': validator_constructor(unicode, 'string'),
     'bool': bool_validator,
-    'semester_or_none': semester_or_none_validator,
+    'semester_or_never': semester_or_never_validator,
     'email': email_validator,
 }

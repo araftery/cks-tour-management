@@ -249,4 +249,8 @@ body.login {
 {
   margin: 10px 0;
 }
-
+.panel-heading
+{
+  text-align:center;
+  font-weight:bold;
+}

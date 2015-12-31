@@ -20,6 +20,11 @@ urlpatterns = patterns('',
         name='person-new',
     ),
     url(
+        regex=r'^person/bulk-new/$',
+        view=views.BulkCreatePersonView.as_view(),
+        name='person-new-bulk',
+    ),
+    url(
         regex=r'^special-requirements/$',
         view=views.UpdateSpecialRequirementsView.as_view(),
         name='special-requirements-update',
@@ -33,5 +38,25 @@ urlpatterns = patterns('',
         regex=r'^inactive-semester/(?P<pk>\d+)/delete/$',
         view=views.DeleteInactiveSemesterView.as_view(),
         name='inactive-semester-delete',
+    ),
+    url(
+        regex=r'^roster/$',
+        view=views.RosterView.as_view(),
+        name='roster-noargs',
+    ),
+    url(
+        regex=r'^roster/(?P<year>\d{4})/(?P<semester>\w+)/$',
+        view=views.RosterView.as_view(),
+        name='roster',
+    ),
+    url(
+        regex=r'^roster/vcard/$',
+        view=views.RosterVCardView.as_view(),
+        name='roster-vcard-noargs',
+    ),
+    url(
+        regex=r'^roster/(?P<year>\d{4})/(?P<semester>\w+)/vcard/$',
+        view=views.RosterVCardView.as_view(),
+        name='roster-vcard',
     ),
 )

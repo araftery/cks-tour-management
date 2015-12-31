@@ -21,6 +21,7 @@ class ShiftForm(forms.ModelForm):
         self.fields['person'].required = False
         self.fields['source'] = forms.ChoiceField(choices=Shift.source_choices)
         self.fields['time'] = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'class': 'datepicker'}, format="%m/%d/%Y %I:%M %p"), input_formats=["%m/%d/%Y %I:%M %p"])
+        self.fields['length'].label = 'Length (minutes)'
 
         self.helper.form_action = './'
 
@@ -36,6 +37,7 @@ class ShiftForm(forms.ModelForm):
 
             Div(
                 Submit('submit', 'Submit', css_class="btn btn-danger"),
+                css_class='button_container',
             ),
         )
 

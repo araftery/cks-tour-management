@@ -85,6 +85,19 @@
                   <li class="{% navactive request 'shifts:shift-new' %}"><a href="{% url 'shifts:shift-new' %}">New Shift</a></li>
                 </ul>
               </li>
+
+                <li class="dropdown {% navactive request 'profiles:person-new, profiles:person-edit, profiles:person-delete' %}">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Members <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li class="{% navactive request 'profiles:person-new' %}"><a href="{% url 'profiles:person-new' %}">New Member</a></li>
+                  <li class="{% navactive request 'profiles:person-new-bulk' %}"><a href="{% url 'profiles:person-new-bulk' %}">New Members (Bulk)</a></li>
+                </ul>
+              </li>
+
+              <li class="{% navactive request 'profiles:roster,profiles:roster-noargs,' %}"><a href="{% url 'profiles:roster-noargs' %}">Roster</a></li>
+
+              <li class="{% navactive request 'core:settings' %}"><a href="{% url 'core:settings' %}">Settings</a></li>
+              {% if user.is_staff %}<li><a href="/admin">Admin</a></li>{% endif %}
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -132,6 +145,23 @@ $('.post-btn').on('click', function(e){
     {
         post_request(url, 'post', {});
     }
+});
+$(function() {
+  $('.selectize').selectize({
+        create: false,
+    });
+  $('.datepicker').datetimepicker({
+    ampm: true,
+    dateFormat: 'mm/dd/yy',
+    timeFormat: 'hh:mm tt',
+    stepMinute: 5
+  });
+
+  $('.timepicker').timepicker({
+    ampm: true,
+    timeFormat: 'hh:mm tt',
+    stepMinute: 5
+  });
 });
     </script>
 

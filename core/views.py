@@ -9,8 +9,9 @@ from braces.views import (
     GroupRequiredMixin,
 )
 
+from core.forms import SettingFormSet
 from core.models import Setting
-from core.setting_validators import setting_validators
+from tours.models import DefaultTour
 
 
 class BoardOnlyMixin(LoginRequiredMixin, GroupRequiredMixin):
@@ -21,39 +22,21 @@ class SettingsView(PermissionRequiredMixin, BoardOnlyMixin, View):
     permission_required = 'core.change_setting'
 
     def get(self, request, *args, **kwargs):
-        settings = Setting.objects.all().order_by('order_num')
-        settings_vals = []
-        for setting in settings:
-            # setting, value, [errors]
-            settings_vals.append((setting, setting.value, None))
-        return render(request, 'core/settings.html', {'settings': settings_vals})
+        existing_settings = Setting.objects.raw('SELECT DISTINCT core_setting.id, core_setting.order_num FROM core_setting INNER JOIN (SELECT MAX(id) AS id FROM core_setting GROUP BY name) maxid ON core_setting.id = maxid.id ORDER BY core_setting.order_num ASC')
+        settings = Setting.objects.filter(id__in=(x.pk for x in existing_settings)).order_by('order_num')
+        formset = SettingFormSet(queryset=settings)
+        default_tours = DefaultTour.objects.all().order_by('day_num', 'hour', 'minute')
+        return render(request, 'core/settings.html', {'formset': formset, 'default_tours': default_tours})
 
     def post(self, request, *args, **kwargs):
-        settings = Setting.objects.all().order_by('order_num')
-        form_data = []
-        form_validation = []
-
-        for setting in settings:
-            form_data.append(setting, request.POST.get('setting_{}'.format(setting.name)))
-
-        for setting, data in settings:
-            validation = setting_validators[setting.value_type](setting.value)
-            form_validation.append((setting, validation))
-
-        if all([x[1]['valid'] for x in form_validation]):
-            # form is valid, save and redirect
-            for setting, validation in form_validation:
-                new_value = validation['value']
-                setting.value = new_value
-                setting.save()
+        data = request.POST
+        formset = SettingFormSet(data)
+        if formset.is_valid():
+            formset.save()
             return redirect('core:settings')
         else:
-            # form is invalid, show errors
-            settings_vals = []
-            for setting, validation in form_validation:
-                settings_vals.append((setting, validation['value'], validation['errors']))
-
-            return render(request, 'core/settings.html', {'settings': settings_vals})
+            default_tours = DefaultTour.objects.all().order_by('day_num', 'hour', 'minute')
+            return render(request, 'core/settings.html', {'formset': formset, 'default_tours': default_tours})
 
 
 class HomeView(LoginRequiredMixin, View):

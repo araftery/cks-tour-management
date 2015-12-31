@@ -1,10 +1,9 @@
-import vobject
-
 from django.db import models
 
 from phonenumber_field.modelfields import PhoneNumberField
+import vobject
 
-from core import utils
+from core import utils as core_utils
 
 
 class PersonQuerySet(models.QuerySet):
@@ -13,9 +12,9 @@ class PersonQuerySet(models.QuerySet):
         Includes only members who are inactive for the given semester and year
         """
         if semester is None:
-            semester = utils.current_semester()
+            semester = core_utils.current_semester()
         if year is None:
-            year = utils.now().year
+            year = core_utils.now().year
         else:
             year = int(year)
             semester = semester.lower()
@@ -27,9 +26,9 @@ class PersonQuerySet(models.QuerySet):
         Excludes members who are inactive for the given semester and year
         """
         if semester is None:
-            semester = utils.current_semester()
+            semester = core_utils.current_semester()
         if year is None:
-            year = utils.now().year
+            year = core_utils.now().year
         else:
             year = int(year)
 
@@ -39,14 +38,14 @@ class PersonQuerySet(models.QuerySet):
 
     def current_members(self, semester=None, year=None):
         if semester is None:
-            semester = utils.current_semester()
+            semester = core_utils.current_semester()
         if year is None:
-            year = utils.now().year
+            year = core_utils.now().year
         else:
             year = int(year)
             semester = semester.lower()
 
-        senior_year, freshman_year = utils.class_years(semester=semester, year=year, bookends_only=True)
+        senior_year, freshman_year = core_utils.class_years(semester=semester, year=year, bookends_only=True)
 
         kwargs = {}
 
@@ -97,6 +96,182 @@ class Person(models.Model):
         else:
             return phone
 
+    def requirements(self, semester=None, year=None):
+        """
+        Get requirements for a given semester.
+        """
+        year, semester = core_utils.parse_year_semester(year, semester)
+
+        tours_required = self.tours_required_num(semester, year)
+        shifts_required = self.shifts_required_num(semester, year)
+        dues_required = core_utils.dues_required(semester=semester, year=year)
+
+        return tours_required, shifts_required, dues_required
+
+    def tours_required_num(self, semester=None, year=None):
+        year, semester = core_utils.parse_year_semester(year, semester)
+
+        # start with default
+        tours_required = core_utils.get_default_num_tours(semester=semester, year=year)
+
+        # check for override
+        try:
+            overridden_reqs = self.overridden_requirements.get(semester=semester, year=year)
+            tours_required = overridden_reqs.tours_required
+        except OverrideRequirement.DoesNotExist:
+            pass
+
+        # get number of missed tours
+        num_missed = self.tours.semester(semester=semester, year=year).filter(missed=True).count()
+        num_extra = num_missed * core_utils.get_setting('Missed Tour Penalty')
+
+        return tours_required + num_extra
+
+    def shifts_required_num(self, semester=None, year=None):
+        year, semester = core_utils.parse_year_semester(year, semester)
+
+        # start with default
+        shifts_required = core_utils.get_default_num_shifts(semester=semester, year=year)
+
+        # check for override
+        try:
+            overridden_reqs = self.overridden_requirements.get(semester=semester, year=year)
+            shifts_required = overridden_reqs.shifts_required
+        except OverrideRequirement.DoesNotExist:
+            pass
+
+        # get number of missed shifts
+        num_missed = self.shifts.semester(semester=semester, year=year).filter(missed=True).count()
+        num_extra = num_missed * core_utils.get_setting('Missed Shift Penalty')
+
+        return shifts_required + num_extra
+
+    def dues_status(self, semester=None, year=None):
+        year, semester = core_utils.parse_year_semester(year, semester)
+        dues_required = core_utils.dues_required(semester=semester, year=year)
+
+        if dues_required:
+            if self.dues_payments.filter(year=year, semester=semester):
+                return 'complete'
+            else:
+                return 'incomplete'
+        else:
+            return 'not_required'
+
+    def tours_status(self, semester=None, year=None):
+        """
+        Returns dictionary of form:
+        {
+            'status': 'complete'|'incomplete'|'projected',
+            'num_remaining': int,
+            'num_to_sign_up': int,
+            'num_extra': int,
+            'date_projected': date|None,
+            'complete': [],
+            'late': [],
+            'missed': [],
+            'upcoming': [],
+            'tours': [],
+        }
+        """
+        year, semester = core_utils.parse_year_semester(year, semester)
+        now_obj = core_utils.now()
+        semester_tours = self.tours.filter(counts_for_requirements=True).semester(semester=semester, year=year).order_by('time')
+        complete = semester_tours.filter(missed=False, late=False, time__lte=now_obj)
+        late = semester_tours.filter(late=True, missed=False, time__lte=now_obj)
+        missed = semester_tours.filter(missed=True, time__lte=now_obj)
+        upcoming = semester_tours.filter(time__gt=now_obj)
+
+        num_required = self.tours_required_num(semester=semester, year=year)
+        num_remaining = num_required - complete.count()
+        num_extra = abs(min(num_remaining, 0))
+        num_remaining = max(num_remaining, 0)
+        num_to_sign_up = max(num_remaining - upcoming.count(), 0)
+
+        # calculate status
+        if num_remaining <= 0:
+            status = 'complete'
+        elif num_remaining <= upcoming.count():
+            status = 'projected'
+        else:
+            status = 'incomplete'
+
+        if status == 'projected':
+            completion_obj = upcoming[num_remaining - 1]
+            date_projected = completion_obj.time
+        else:
+            date_projected = None
+
+        return {
+            'status': status,
+            'num_remaining': num_remaining,
+            'num_to_sign_up': num_to_sign_up,
+            'num_extra': num_extra,
+            'date_projected': date_projected,
+            'complete': complete,
+            'late': late,
+            'missed': missed,
+            'upcoming': upcoming,
+            'tours': semester_tours,
+        }
+
+    def shifts_status(self, semester=None, year=None):
+        """
+        Returns dictionary of form:
+        {
+            'status': 'complete'|'incomplete'|'projected',
+            'num_remaining': int,
+            'num_to_sign_up': int,
+            'num_extra': int,
+            'date_projected': date|None,
+            'complete': [],
+            'late': [],
+            'missed': [],
+            'upcoming': [],
+            'shifts': [],
+        }
+        """
+        year, semester = core_utils.parse_year_semester(year, semester)
+        now_obj = core_utils.now()
+        semester_shifts = self.shifts.filter(counts_for_requirements=True).semester(semester=semester, year=year).order_by('time')
+        complete = semester_shifts.filter(missed=False, late=False, time__lte=now_obj)
+        late = semester_shifts.filter(late=True, missed=False, time__lte=now_obj)
+        missed = semester_shifts.filter(missed=True, time__lte=now_obj)
+        upcoming = semester_shifts.filter(time__gt=now_obj)
+
+        num_required = self.shifts_required_num(semester=semester, year=year)
+        num_remaining = num_required - complete.count()
+        num_extra = abs(min(num_remaining, 0))
+        num_remaining = max(num_remaining, 0)
+        num_to_sign_up = max(num_remaining - upcoming.count(), 0)
+
+        # calculate status
+        if num_remaining <= 0:
+            status = 'complete'
+        elif num_remaining <= upcoming.count():
+            status = 'projected'
+        else:
+            status = 'incomplete'
+
+        if status == 'projected':
+            completion_obj = upcoming[num_remaining - 1]
+            date_projected = completion_obj.time
+        else:
+            date_projected = None
+
+        return {
+            'status': status,
+            'num_remaining': num_remaining,
+            'num_to_sign_up': num_to_sign_up,
+            'num_extra': num_extra,
+            'date_projected': date_projected,
+            'complete': complete,
+            'late': late,
+            'missed': missed,
+            'upcoming': upcoming,
+            'shifts': semester_shifts,
+        }
+
     @property
     def is_active(self):
         if self._default_manager.active().current_members().filter(pk=self.pk):
@@ -121,7 +296,7 @@ class Person(models.Model):
         v.add('email')
         v.email.value = self.email
         v.add('tel')
-        v.tel.value = self.phone
+        v.tel.value = unicode(self.phone)
         v.tel.type_param = 'MOBILE'
         output = v.serialize()
         return output

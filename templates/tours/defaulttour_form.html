@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load staticfiles crispy_forms_tags core_tags %}
+
+{% block title %} CKS Tour Management: 
+{% if object %}
+    Edit Default Tour
+{% else %}
+    New Default Tour
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if object %}
+    <h1>Edit Default Tour on {{ object.day_num|day_name }} at {{ object.time|date:"g:i A" }}</h1>
+{% else %}
+    <h1>New Default Tour</h1>
+{% endif %}
+
+{% if object and perms.tours.delete_defaulttour %}
+<div class="col-md-8">
+{% endif %}
+    {% crispy form %}
+{% if object %}
+</div>
+{% endif %}
+
+{% if object and perms.tours.delete_defaulttour %}
+<div class="col-md-4">
+<div class="panel panel-warning">
+    <div class="panel-heading">Warning: these actions are irreversible</div>
+    <div class="panel-body">
+        <a class="btn btn-warning btn-block post-btn" data-action="delete this default tour" href="{% url 'tours:defaulttour-delete' object.pk %}">Delete this default tour</a>
+    </div>
+</div>
+</div>
+{% endif %}
+
+{% endblock %}

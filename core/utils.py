@@ -7,6 +7,7 @@ from django.http import Http404
 from django.utils import timezone
 
 from core.models import Setting
+from core.setting_validators import setting_validators
 
 
 def now():
@@ -60,6 +61,20 @@ def parse_year_month(year, month, default='now'):
     return year, month
 
 
+def parse_year_semester(year, semester):
+    if semester is None:
+        semester = current_semester()
+    else:
+        semester = semester.lower()
+
+    if year is None:
+        year = now().year
+    else:
+        year = int(year)
+
+    return year, semester
+
+
 def add_months(sourcedate, months, return_datetime=False):
     """
     Takes a source datetime.datetime or datetime.date and adds a number of months.
@@ -102,11 +117,99 @@ def class_years(semester=None, year=None, bookends_only=False):
         return years
 
 
-def get_default_num_tours():
-    num = Setting.objects.filter(name=settings.DEFAULT_NUM_TOURS_SETTING_NAME).last().value
-    return int(num)
+def semester_bounds(semester, year):
+    """
+    Dates are inclusive, meaning that the entire start and end date
+    are part of the given semester.
+    """
+    if semester not in ('fall', 'spring'):
+        raise ValueError('Semester must be either fall or spring.')
+    start_month, start_day = settings.SEMESTER_START[semester]
+    end_month, end_day = settings.SEMESTER_END[semester]
+    start = datetime.datetime(year, start_month, start_day)
+    end = datetime.datetime(year, end_month, end_day, 23, 59)
+
+    return start, end
 
 
-def get_default_num_shifts():
-    num = Setting.objects.filter(name=settings.DEFAULT_NUM_SHIFTS_SETTING_NAME).last().value
-    return int(num)
+def get_setting(name, semester=None, year=None, time=None):
+    """
+    Gets the setting value at the given time.
+    """
+    if time is not None:
+        pass
+    elif semester is not None and year is not None:
+        # get time object for end of semester
+        if semester == 'spring':
+            month, day = settings.SPRING_SEMESTER_END
+        elif semester == 'fall':
+            month, day = settings.FALL_SEMESTER_END
+        else:
+            raise ValueError
+
+        time = datetime.datetime(year, month, day)
+    else:
+        time = now()
+
+    try:
+        setting = Setting.objects.filter(name=name, time_set__lte=time).latest('time_set')
+    except Setting.DoesNotExist:
+        # if it doesn't exist for that time, just get the latest value
+        setting = Setting.objects.filter(name=name).latest('time_set')
+
+    cleaned_value = setting_validators[setting.value_type](setting.value)['value']
+
+    return cleaned_value
+
+
+def get_default_num_tours(semester=None, year=None, time=None):
+    return get_setting(name=settings.DEFAULT_NUM_TOURS_SETTING_NAME, semester=semester, year=year, time=time)
+
+
+def get_default_num_shifts(semester=None, year=None, time=None):
+    return get_setting(name=settings.DEFAULT_NUM_SHIFTS_SETTING_NAME, semester=semester, year=year, time=time)
+
+
+def dues_required(semester=None, year=None, time=None):
+    dues_required_semester = get_setting(name='Collect Dues')
+    if time is None and semester is None:
+        time = now()
+
+    if time:
+        semester = current_semester(time)
+
+    return dues_required_semester == 'both' or dues_required_semester == semester
+
+
+# accepts only 1 or -1 for delta
+# returns tuple in form (semester, year) or dictionary in form {'semester': semester, 'year': year}
+def delta_semester(semester, year, delta, as_dict=False):
+    """
+    Finds the next or previous semester and year, given a semester and year.
+    Returns a dictionary in form {'semester': 'fall', 'year: 2013} or tuple in form (semester, year).
+    Accepts either 1 or -1 for delta.
+    """
+    semesters = ['fall', 'spring']
+    if semester not in semesters:
+        raise ValueError
+    elif delta not in [1, -1]:
+        raise ValueError
+
+    year = int(year)
+
+    new_semester = semesters[(semesters.index(semester) + delta) % 2]
+    if semester == 'fall':
+        if delta == 1:
+            new_year = year + 1
+        elif delta == -1:
+            new_year = year
+    elif semester == 'spring':
+        if delta == 1:
+            new_year = year
+        elif delta == -1:
+            new_year = year - 1
+
+    if as_dict is True:
+        return {'semester': new_semester, 'year': new_year}
+    else:
+        return new_semester, new_year

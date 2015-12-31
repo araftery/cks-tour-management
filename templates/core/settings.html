@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load staticfiles crispy_forms_tags core_tags %}
+
+{% block title %} CKS Tour Management: Settings {% endblock %}
+
+{% block extrahead %}    
+    <link type="text/css" href="{% static "css/settings.css"%}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<form method="post">
+    <div class="row">
+        <div class="col-sm-6">
+            <h2 class="center"> Settings </h3>
+                {% csrf_token %}
+                {{ formset.management_form }}
+                {% for error in form.errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
+                <table class="table table-striped settings-table">
+                    <tbody>
+                        {% for form in formset %}
+                        <tr>
+                            <td>
+                                <h3 class="settings-header">{{ form.instance.name }}</h3>
+                                <span class="settings-description">{{ form.instance.description }}</span>
+                            </td>
+                            <td>
+                                {% if perms.core.add_setting %}
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <div class="alert alert-danger">{{ error }}</div>
+                                        {% endfor %}
+                                        {{ field }}
+                                    {% endfor %}
+                                {% else %}
+                                    {{ form.instance.value }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            <div class="btn-container">
+                <button type="submit" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+</form>
+
+        <div class="col-sm-6">
+            <h2 class="center"> Default Tours </h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Day</th>
+                        <th>Source</th>
+                        <th>Length</th>
+                        {% if perms.tours.change_defaulttour %}
+                            <th>Edit</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for default_tour in default_tours %}
+                        <tr>
+                            <td>{{ default_tour.time|date:"g:i A" }}</td>
+                            <td>{{ default_tour.day_num|day_name }}</td>
+                            <td>{{ default_tour.source }}</td>
+                            <td>{{ default_tour.length }}</td>
+                            {% if perms.tours.change_defaulttour %}
+                                <td>
+                                    <a class="edit-btn" href="{% url 'tours:defaulttour-edit' pk=default_tour.pk %}"><span class="glyphicon glyphicon-edit"></span></a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="add_default_semester_container">
+                <a id="add_default_semester_btn" class="btn btn-info" href="{% url 'tours:defaulttour-new' %}"><span class="glyphicon glyphicon-plus"></span> Add</a>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
