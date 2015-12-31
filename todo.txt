@@ -96,7 +96,7 @@
     [x] view
     [x] template
 [ ] public site
-[ ] Create default settings in dataabse
+[x] Create default settings in dataabse
 [ ] replace logo
 [ ] Add public url when month is open
 [ ] only superusers can change superuser status
