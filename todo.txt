@@ -1,5 +1,5 @@
 ## Views to Move
-[ ] text_response
+[x] text_response
 [x] month_shifts
     [x] view
     [x] template
@@ -95,10 +95,18 @@
 [x] close_month
     [x] view
     [x] template
-[ ] public site
+[x] public site
+    [x] month
+    [x] claim tour
+    [x] unclaim tour
+    [x] profile
+    [x] help
+    [x] redirect from main site on login
 [x] Create default settings in dataabse
-[ ] replace logo
-[ ] Add public url when month is open
-[ ] only superusers can change superuser status
+[x] replace logo
+[x] Add public url when month is open
+[x] only superusers can change superuser status
+[x] admin registers
+[x] data migration to make auth groups
 [ ] celery emails
-[ ] management commands from settings page
+[ ] requirements file

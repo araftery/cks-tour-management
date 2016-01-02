@@ -51,6 +51,9 @@ class Tour(models.Model):
     # custom manager
     objects = TaskQuerySet.as_manager()
 
+    def time_local(self):
+        return core_utils.localize_time(self.time)
+
     def is_upcoming(self):
         now = core_utils.now()
         if self.time > now:
@@ -66,17 +69,15 @@ class Tour(models.Model):
 
     @property
     def claim_eligible(self):
+        from tours.utils import month_is_open
         now = core_utils.now()
 
         # check if the month is open
-        latest = OpenMonth.objects.filter(month=self.time.month, year=self.time.year).order_by('pk').last()
-
-        # month is not open
-        if not latest:
+        if not month_is_open(month=now.month, year=now.year):
             return False
 
-        # month was open, check if it's still open and the tour is in the future
-        return (latest.opens <= now <= latest.closes) and self.time >= now
+        # month is open, check if the tour is in the future
+        return self.time >= now
 
     def __unicode__(self):
         if self.guide is not None:

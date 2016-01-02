@@ -1,0 +1,11 @@
+{% load staticfiles core_tags %}
+<html>
+<head>
+    <title>CKS Tour Management: Help</title>
+    <link rel="stylesheet" href="{% static "css/github_markdown.css" %}"  />
+</head>
+<body>
+    <a href="{% url 'public:home' %}">&lt;- Back</a>
+{{ markdown|markdown }}
+</body>
+</html>

@@ -28,6 +28,21 @@ defaults = OrderedDict((
         'value_type': 'bool',
         'value': 'true',
     }),
+    ('Info Center Director Name', {
+        'description': 'Name of the person who Key members should call or text if they are running late for a tour.',
+        'value_type': 'string',
+        'value': 'Kendyl',
+    }),
+    ('Info Center Phone Number', {
+        'description': 'Phone number which Key members should call or text if they are running late for a tour.',
+        'value_type': 'string',
+        'value': '555-555-5555',
+    }),
+    ('Allow Texting to Info Center', {
+        'description': 'If true, Key members will be instructed to call or text the number above if they are running late for a tour. If false, they will be instructed only to call. Set to false if the phone number above does not accept texts (for example, the Info Center landline).',
+        'value_type': 'bool',
+        'value': 'true',
+    }),
     ('Collect Dues', {
         'description': 'Semester when dues are collected. Can be: fall, spring, both, or never.',
         'value_type': 'semester_or_never',
@@ -48,10 +63,20 @@ defaults = OrderedDict((
         'value_type': 'email',
         'value': 'crimsonkeysociety@gmail.com',
     }),
-    ('Twilio API Key', {
-        'description': 'Twilio API key for sending text reminders.',
+    ('Twilio Account SID', {
+        'description': 'Twilio API account SID for sending text reminders.',
         'value_type': 'string',
         'value': '12456',
+    }),
+    ('Twilio Auth Token', {
+        'description': 'Twilio API auth token for sending text reminders.',
+        'value_type': 'string',
+        'value': '12456',
+    }),
+    ('Twilio Phone Number', {
+        'description': "Crimson Key's Twilio phone number for sending text reminders. Should start with +1 and have no other punctuation.",
+        'value_type': 'string',
+        'value': '+15555555555',
     }),
 ))
 

@@ -1,0 +1,123 @@
+{% extends 'email/alert_base.html' %}
+{% load core_tags %}
+
+{% block meta_title %}{{ title }}{% endblock %}
+{% block alert_level %}cks{% endblock %}
+{% block heading %}CKS Requirements Update{% endblock %}
+{% block inner_content %}
+  <tr>
+    <td class="content-block" colspan="2">
+      Hi {{ person.first_name }}. This is an update on your CKS semester requirements. So far, you've completed {{ person.cached_status.tours_status.complete.count }} tour(s), and you're required to give {{ person.cached_status.tours_status.num_required }} this semester. You've completed {{ person.cached_status.shifts_status.complete.count }} shift(s), and you're required to complete {{ person.cached_status.shifts_status.num_required }} this semester.{% if collect_dues %}{% if person.cached_status.dues_status == 'complete' %} Your dues have been paid.{% elif person.cached_status.dues_status == 'incomplete' %} Your dues are unpaid.{% endif %}{% endif %} Below, you'll see a breakdown of your past and upcoming tours and shifts from this semester. You can also view this information at any time by logging into the CKS tours site with your Harvard email at: <a href="http://{% current_domain %}{% url 'public:profile-noargs' %}">http://{% current_domain %}{% url 'public:profile-noargs' %}</a>. If any of this information is wrong, please reply to this email and let me know!
+    </td>
+  </tr>
+    <tr>
+        <td class="content-block">
+          <h4>Past Tours this Semester</h4>
+          {% if person.cached_status.tours_status.past %}
+          <ul>
+            {% for tour in person.cached_status.tours_status.past %}
+              <li{% if tour.missed %} style="color:red;"{% elif tour.late %} style="color:orange;"{% endif %}>{{ tour.source }} tour on {{ tour.time|date:"m/d/y" }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <ul><li>You have not given any tours this semester.</li></ul>
+          {% endif %}
+        </td>
+        <td class="content-block">
+          <h4>Past Shifts this Semester</h4>
+          {% if person.cached_status.shifts_status.past %}
+          <ul>
+            {% for shift in person.cached_status.shifts_status.past %}
+              <li{% if shift.missed %} style="color:red;"{% elif shift.late %} style="color:orange;"{% endif %}>{{ shift.source }} shift on {{ shift.time|date:"m/d/y" }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <ul><li>You have not taken any shifts this semester.</li></ul>
+          {% endif %}
+        </td>
+    </tr>
+
+    <tr>
+      <td class="content-block">
+        <h4>Upcoming Tours this Semester</h4>
+        {% if person.cached_status.tours_status.upcoming %}
+              <ul>
+                {% for tour in person.cached_status.tours_status.upcoming %}
+                  <li>{{ tour.source }} tour on {{ tour.time|date:"m/d/y" }} at {{ tour.time|date:"g:i A" }}</li>
+                {% endfor %}
+              </ul>
+          {% else %}
+              <ul><li>You have no upcoming tours.</li></ul>
+          {% endif %}
+      </td>
+      
+      <td class="content-block">
+        <h4>Upcoming Shifts this Semester</h4>
+        {% if person.cached_status.shifts_status.upcoming %}
+            <ul>
+              {% for shift in person.cached_status.shifts_status.upcoming %}
+                <li>{{ shift.source }} shift on {{ shift.time|date:"m/d/y" }} at {{ shift.time|date:"g:i A" }}</li>
+              {% endfor %}
+            </ul>
+        {% else %}
+            <ul><li>You have no upcoming shifts.</li></ul>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" class="content-block">
+        <h4>Requirements Status Summary</h4>
+        <table class="table table-striped" style="width:100%;">
+          <tbody>
+            <tr>
+              <td>Tours</td>
+              <td>
+                {% if person.cached_status.tours_status.status == 'incomplete' %}
+                  <span style="color: #d9534f;">You have {{ person.cached_status.tours_status.num_remaining }} tour(s) remaining to complete this semester.</span>
+                {% elif person.cached_status.tours_status.status == 'projected' %}
+                    <span style="color: #5bc0de;">You are projected to complete your tour requirements on {{ person.cached_status.tours_status.date_projected|date:'m/d/y' }}.</span>
+                  {% else %}
+                    <span style="color: #5cb85c;">You have completed your tour requirements for this semester.</span>
+                {% endif %}
+              </td>
+            </tr>
+
+            <tr>
+              <td>Shifts</td>
+              <td>
+                {% if person.cached_status.shifts_status.status == 'incomplete' %}
+                  <span style="color: #d9534f;">You have {{ person.cached_status.shifts_status.num_remaining }} shift(s) remaining to complete this semester.</span>
+                {% else %}
+                  {% if person.cached_status.shifts_status.status == 'projected' %}
+                    <span style="color: #5bc0de;">You are projected to complete your shift requirements on {{ person.cached_status.shifts_status.date_projected|date:'m/d/y' }}.</span>
+                  {% else %}
+                    <span style="color: #5cb85c;">You have completed your shift requirements for this semester.</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+
+            {% if collect_dues %}
+            <tr>
+              <td>Dues</td>
+              <td>
+                {% if person.cached_status.dues_status == 'incomplete' %}
+                  <span style="color: #d9534f;">You have not paid your dues for this semester.</span>
+                {% elif person.cached_status.dues_status == 'complete' %}
+                  <span style="color: #5cb85c;">You have paid your dues for this semester.</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endif %}
+
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr>
+        <td class="content-block">
+            Best,<br />
+            {{ signature }} 
+        </td>
+    </tr>
+{% endblock %}

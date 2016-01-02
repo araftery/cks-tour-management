@@ -1,0 +1,221 @@
+{% extends "public/base.html" %}
+{% load staticfiles core_tags %}
+
+{% block title %} CKS Tour Management: Your Profile {% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/roster.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/public.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>
+    {% if prev_semester %}
+    <a class="circle-container circle-left" href="{% url 'public:profile' year=prev_semester.year semester=prev_semester.semester %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-left"></i></div>
+    </a>
+    {% endif %}
+    
+    {{ person.full_name }}: {{ semester|title }} {{ year }}
+    
+    {% if next_semester %}
+    <a class="circle-container circle-right" href="{% url 'public:profile' year=next_semester.year semester=next_semester.semester %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-right"></i></div>
+    </a>
+    {% endif %}
+</h1>
+<div class="row">
+<table class="table table-bordered table-striped info-table">
+    <thead>
+        <tr>
+            <th>First</th>
+            <th>Last</th>
+            <th>Email</th>
+            <th>Harvard Email</th>
+            <th>Phone</th>
+            <th>Grad Year</th>
+            <th>Member Since</th>
+            <th>House</th>
+            <th>Req. Staus</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>{{ person.first_name }}</td>
+            <td>{{ person.last_name }}</td>
+            <td>{{ person.email }}</td>
+            <td>{{ person.harvard_email }}</td>
+            <td>{{ person.phone_display }}</td>
+            <td>{{ person.year }}</td>
+            <td>{{ person.member_since_year }}</td>
+            <td>{{ person.house }}</td>
+            <td class="{{ status_class }}">{{ status }}</td>
+        </tr>
+    </tbody>
+</table>
+</div><!-- /.row -->
+
+<div class="row">
+    <div class="col-sm-6">
+        <h2>Tours</h2>
+        {% if not tours %}
+            <span class="center">You have not signed up for any tours this semester.</span>
+        {% else %}
+            <table class="table table-striped tour-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Length</th>
+                        <th>Notes</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for tour in tours %}
+                    <tr>
+                        <td>{{ tour.source }}</td>
+                        <td>{{ tour.time|date:"m/d/y" }}</td>
+                        <td>{{ tour.time|date:"h:i a" }}</td>
+                        <td>{% if tour.length %}{{ tour.length }} mins.{% endif %}</td>
+                        <td>{{ tour.notes }}</td>
+                        <td><div class="requirement_circle{% if tour.is_upcoming %} upcoming{% else %}{% if tour.missed %} missed{% else %}{% if tour.late %} late{% else %} complete{% endif %}{% endif %}{% endif %}"></div></td>
+                        <td>{% if tour.claim_eligible %}<a class="unclaim-btn" href="{% url 'public:tour-unclaim' pk=tour.pk %}"><span class="glyphicon glyphicon-ban-circle"></span></a>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+    </div><!-- /.col -->
+
+    <div class="col-sm-6">
+        <h2>Shifts</h2>
+        {% if not shifts %}
+            <span class="center">You have not signed up for any shifts this semester</span>
+        {% else %}
+            <table class="table table-striped shift-table">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Length</th>
+                        <th>Notes</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for shift in shifts %}
+                    <tr>
+                        <td>{{ shift.source }}</td>
+                        <td>{{ shift.time|date:"m/d/y" }}</td>
+                        <td>{{ shift.time|date:"h:i a" }}</td>
+                        <td>{% if shift.length %}{{ shift.length }} mins.{% endif %}</td>
+                        <td>{{ shift.notes }}</td>
+                        <td><div class="requirement_circle{% if shift.is_upcoming %} upcoming{% else %}{% if shift.missed %} missed{% else %}{% if shift.late %} late{% else %} complete{% endif %}{% endif %}{% endif %}"></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% endif %}
+    </div><!-- /.col -->
+
+</div><!-- /.row -->
+
+
+<div class="row">
+    <div class="col-sm-6 key roster-key">
+        <h2>Key</h2>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Key</h3>
+            </div>
+
+            <div class="panel-body">
+                <table>
+                    <tr><td><div class="requirement_circle complete"></div></td><td>Complete</td></tr>
+                    <tr><td><div class="requirement_circle upcoming"></div></td><td>Projected to Complete</td></tr>
+                    <tr><td><div class="requirement_circle empty"></div></td><td>Incomplete</td></tr>
+                    <tr><td><div class="requirement_circle late"></div></td><td>Completed (Late)</td></tr>
+                    <tr><td><div class="requirement_circle missed"></div></td><td>Missed</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-sm-6">
+        <h2>Requirements Summary</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Requirement</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>Tours</td>
+                        <td>
+                            {% if person.cached_status.tours_status.status == 'incomplete' %}
+                                <span class="incomplete">You have {{ person.cached_status.tours_status.num_remaining }} tour(s) remaining to complete this semester.</span>
+                            {% else %}
+                                {% if person.cached_status.tours_status.status == 'projected' %}
+                                    <span class="projected">You are projected to complete your tour requirements on {{ person.cached_status.tours_status.date_projected|date:"m/d/y" }}.</span>
+                                {% else %}
+                                    <span class="complete">You have completed your tour requirements for this semester.</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>Shifts</td>
+                        <td>
+                            {% if person.cached_status.shifts_status.status == 'incomplete' %}
+                                <span class="incomplete">You have {{ person.cached_status.shifts_status.num_remaining }} shift(s) remaining to complete this semester.</span>
+                            {% else %}
+                                {% if person.cached_status.shifts_status.status == 'projected' %}
+                                    <span class="projected">You are projected to complete your shift requirements on {{ person.cached_status.shifts_status.date_projected|date:"m/d/y" }}.</span>
+                                {% else %}
+                                    <span class="complete">You have completed your shift requirements for this semester.</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% if collect_dues %}
+                    <tr>
+                        <td>Dues</td>
+                        <td>
+                            {% if person.dues_status == 'incomplete' %}
+                                <span class="incomplete">You have not paid your dues for this semester.</span>
+                            {% else %}
+                                <span class="complete">You have paid your dues for this semester.</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+    </div><!-- /.col 
+
+
+</div><!-- /.row -->
+
+<style>
+span.center
+{
+    margin-bottom:10px;
+}
+
+{% endblock %}

@@ -25,4 +25,9 @@ urlpatterns = patterns('',
         view=views.LogoutView.as_view(),
         name='logout',
     ),
+    url(
+        regex=r'^text-response/$',
+        view=views.text_response,
+        name='text-response',
+    ),
 )

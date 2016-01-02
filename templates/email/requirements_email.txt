@@ -1,0 +1,34 @@
+{% load core_tags %}Hi {{ person.first_name }}. This is an update on your CKS semester requirements. So far, you've completed {{ person.cached_status.tours_status.complete.count }} tour(s), and you're required to give {{ person.cached_status.tours_status.num_required }} this semester. You've completed {{ person.cached_status.shifts_status.complete.count }} shift(s), and you're required to complete {{ person.cached_status.shifts_status.num_required }} this semester.{% if person.dues_status.cached_status == 'complete' %} Your dues have been paid.{% elif person.dues_status.cached_status == 'incomplete' %} Your dues are unpaid.{% endif %} Below, you'll see a breakdown of your past and upcoming tours and shifts from this semester. You can also view this information at any time by logging into the CKS tours site with your Harvard email at: http://{% current_domain %}{% url 'public:profile-noargs' %}. If any of this information is wrong, please reply to this email and let me know!
+
+Tours
+=====
+{% if person.cached_status.tours_status.status == 'incomplete' %}
+You have {{ person.cached_status.tours_status.num_remaining }} tour(s) remaining to complete this semester.
+{% elif person.cached_status.tours_status.status == 'projected' %}
+You are projected to complete your tour requirements on {{ person.cached_status.tours_status.date_projected|date:'m/d/y' }}.
+{% else %}
+You have completed your tour requirements for this semester.
+{% endif %}
+
+Shifts
+======
+{% if person.cached_status.shifts_status.status == 'incomplete' %}
+You have {{ person.cached_status.shifts_status.num_remaining }} shift(s) remaining to complete this semester.
+{% elif person.cached_status.shifts_status.status == 'projected' %}
+You are projected to complete your shift requirements on {{ person.cached_status.shifts_status.date_projected|date:'m/d/y' }}.
+{% else %}
+You have completed your shift requirements for this semester.
+{% endif %}
+
+{% if collect_dues %}
+Dues
+====
+{% if person.cached_status.dues_status == 'incomplete' %}
+You have not paid your dues for this semester.
+{% elif person.cached_status.dues_status == 'complete' %}
+You have paid your dues for this semester.
+{% endif %}
+{% endif %}
+
+Best,
+{{ signature }}

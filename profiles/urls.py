@@ -59,4 +59,9 @@ urlpatterns = patterns('',
         view=views.RosterVCardView.as_view(),
         name='roster-vcard',
     ),
+    url(
+        regex=r'^roster/send-requirements-emails/$',
+        view=views.SendRequirementsEmailsView.as_view(),
+        name='send-requirements-emails',
+    ),
 )

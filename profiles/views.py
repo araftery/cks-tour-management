@@ -1,5 +1,6 @@
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse_lazy
+from django.forms import HiddenInput
 from django.contrib.auth.models import User
 from django.http import Http404, HttpResponseNotAllowed, HttpResponse
 from django.views.generic import View, UpdateView, CreateView, DeleteView, FormView
@@ -13,7 +14,7 @@ from core.utils import now, current_semester, get_default_num_shifts, get_defaul
 from core.views import BoardOnlyMixin
 from profiles.models import Person, OverrideRequirement, InactiveSemester, DuesPayment
 from profiles.forms import PersonForm, SpecialRequirementsForm, PersonBulkForm, DuesPaymentForm
-from profiles.utils import set_groups_by_position, member_latest_semester
+from profiles.utils import set_groups_by_position, member_latest_semester, send_requirements_email
 
 
 class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
@@ -22,8 +23,25 @@ class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     form_class = PersonForm
     template_name = 'profiles/person_form.html'
 
+    def post(self, request, *args, **kwargs):
+        request.POST = request.POST.copy()
+
+        # only superusers can change site_admin status
+        try:
+            obj = Person.objects.get(pk=kwargs.get('pk'))
+            if not request.user.is_superuser:
+                if obj.site_admin != request.POST.get('site_admin'):
+                    request.POST['site_admin'] = obj.site_admin
+        except Person.DoesNotExist:
+            pass
+
+        return super(EditPersonView, self).post(request, *args, **kwargs)
+
     def get_form(self, form_class):
         form = super(EditPersonView, self).get_form(form_class)
+        if not self.request.user.person.site_admin:
+            form.fields['site_admin'].widget = HiddenInput()
+
         form.data = form.data.copy()
         try:
             phone = form.data['phone']
@@ -94,34 +112,49 @@ class CreatePersonView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
     form_class = PersonForm
     template_name = 'profiles/person_form.html'
 
-    def post(self, request, *args, **kwargs):
+    def get_form(self, form_class):
+        form = super(CreatePersonView, self).get_form(form_class)
+        if not self.request.user.person.site_admin:
+            form.fields['site_admin'].widget = HiddenInput()
+
+        form.data = form.data.copy()
         try:
-            phone = request.POST['phone']
+            phone = form.data['phone']
             # add the '+1' if necessary
             if phone[0] != '+':
                 phone = u'+1{}'.format(phone)
 
-            request.POST['phone'] = phone
+            form.data['phone'] = phone
         except:
             pass
 
-        return super(CreatePersonView, self).post(self, request, *args, **kwargs)
+        if form.data.get('site_admin') == 'True' and not self.request.user.person.site_admin:
+            form.data['site_admin'] = 'False'
+
+        return form
 
     def form_valid(self, form):
         form.save()
 
-        # create user and social auth objects
-        username = self.object.harvard_email.split('@')[0]
-        user = User.objects.create_user(username=username, email=self.object.harvard_email, first_name=self.object.first_name, last_name=self.object.last_name)
-        self.object.user = user
-        self.object.save()
+        person = form.instance
 
-        UserSocialAuth.objects.create(user=user, provider='google-oauth2', uid=self.object.harvard_email)
+        # create user and social auth objects
+        username = person.harvard_email.split('@')[0]
+        user = User.objects.create_user(username=username, email=person.harvard_email, first_name=person.first_name, last_name=person.last_name)
+
+        # no need for the user to have a password, since we'll use Google OAuth to login
+        user.set_unusable_password()
+        user.save()
+
+        person.user = user
+        person.save()
+
+        UserSocialAuth.objects.create(user=user, provider='google-oauth2', uid=person.harvard_email)
 
         # set appropriate groups and status based on position
-        set_groups_by_position(self.object)
+        set_groups_by_position(person)
 
-        if self.object.site_admin is True:
+        if person.site_admin is True:
             user.is_staff = True
             user.is_superuser = True
             user.save()
@@ -296,6 +329,8 @@ class RosterView(BoardOnlyMixin, View):
 
         people = self.get_people(semester=semester, year=year)
 
+        is_current_semester = semester == current_semester() and year == now().year
+
         # cache requirements status results so that we don't have to keep hitting the db
         for person in people:
             dues_status = person.dues_status(semester=semester, year=year)
@@ -317,6 +352,7 @@ class RosterView(BoardOnlyMixin, View):
             'prev_semester': prev_semester,
             'next_semester': next_semester,
             'collect_dues': collect_dues,
+            'is_current_semester': is_current_semester,
         }
 
         return render(request, 'profiles/roster.html', context)
@@ -359,3 +395,14 @@ class RosterVCardView(BoardOnlyMixin, View):
         response['Content-Disposition'] = 'attachment; filename=cks_members_{}_{}.vcf'.format(semester, year)
 
         return response
+
+
+class SendRequirementsEmailsView(PermissionRequiredMixin, BoardOnlyMixin, View):
+    permission_required = 'profiles.send_requirements_email'
+
+    def post(self, request, *args, **kwargs):
+        active_members = Person.objects.select_related().current_members().active()
+        for person in active_members:
+            send_requirements_email.delay(person)
+
+        return render(request, 'profiles/requirements_emails_confirm.html', {'num': active_members.count()})

@@ -22,7 +22,7 @@ class EditShiftView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     template_name = 'shifts/shift_form.html'
 
     def get_success_url(self):
-        return reverse_lazy('shifts:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('shifts:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class CreateShiftView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
@@ -32,7 +32,7 @@ class CreateShiftView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
     template_name = 'shifts/shift_form.html'
 
     def get_success_url(self):
-        return reverse_lazy('shifts:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('shifts:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class DeleteShiftView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
@@ -40,7 +40,7 @@ class DeleteShiftView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     model = Shift
 
     def get_success_url(self):
-        return reverse_lazy('shifts:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('shifts:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class MonthView(BoardOnlyMixin, View):

@@ -2,7 +2,7 @@ import pytz
 
 from django.db import models
 
-from core import utils
+from core import utils as core_utils
 from tours.models import TaskQuerySet
 
 
@@ -31,6 +31,9 @@ class Shift(models.Model):
     # custom manager
     objects = TaskQuerySet.as_manager()
 
+    def time_local(self):
+        return core_utils.localize_time(self.time)
+
     def is_missed(self):
         if self.missed:
             return True
@@ -51,7 +54,7 @@ class Shift(models.Model):
 
     @property
     def is_upcoming(self):
-        now = utils.now()
+        now = core_utils.now()
         if self.time > now:
             return True
         else:

@@ -35,6 +35,8 @@ THIRD_PARTY_APPS = (
     'crispy_forms',
     'selectize',
     'social.apps.django_app.default',
+    'djrill',
+    'djcelery',
 )
 
 MY_APPS = (
@@ -42,6 +44,7 @@ MY_APPS = (
     'profiles',
     'tours',
     'shifts',
+    'public',
 )
 
 INSTALLED_APPS = DEFAULT_APPS + THIRD_PARTY_APPS + MY_APPS
@@ -128,10 +131,10 @@ SOCIAL_AUTH_PIPELINE = (
 ##### EMAIL ################################################
 ############################################################
 
-# MANDRILL_USER = os.environ.get('MANDRILL_USER')
-# MANDRILL_API_KEY = os.environ.get('MANDRILL_API_KEY')
-# EMAIL_BACKEND = "djrill.mail.backends.djrill.DjrillBackend"
-# SERVER_EMAIL = "quadgrill@quadgrill.com"
+MANDRILL_USER = os.environ.get('MANDRILL_USER')
+MANDRILL_API_KEY = os.environ.get('MANDRILL_API_KEY')
+EMAIL_BACKEND = "djrill.mail.backends.djrill.DjrillBackend"
+SERVER_EMAIL = "crimsonkeysociety@gmail.com"
 
 ADMINS = (
     ('Andrew Raftery', 'andrewraftery@gmail.com'),
@@ -175,28 +178,15 @@ SITE_ID = 1
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
-
-############################################################
-##### TWILIO ###############################################
-############################################################
-# TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-# TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-# TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
-
-
 ############################################################
 ##### CELERY ###############################################
 ############################################################
 
-# CELERY_ENABLE_UTC = True
-# CELERY_TIMEZONE = TIME_ZONE
-# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-# BROKER_URL = os.environ.get('CLOUDAMQP_URL')
-# CELERY_RESULT_DBURI = os.environ.get('DATABASE_URL')
-
-# put these two lines at the very bottom of the settings file
-# import djcelery
-# djcelery.setup_loader()
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+BROKER_URL = os.environ.get('CLOUDAMQP_URL')
+CELERY_RESULT_DBURI = os.environ.get('DATABASE_URL')
 
 ############################################################
 ##### TESTS ################################################
@@ -209,11 +199,11 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 ############################################################
 
 # in form (month, date)
-FALL_SEMESTER_START = (8, 1)
+FALL_SEMESTER_START = (6, 1)
 FALL_SEMESTER_END = (12, 31)
 
 SPRING_SEMESTER_START = (1, 1)
-SPRING_SEMESTER_END = (7, 31)
+SPRING_SEMESTER_END = (5, 31)
 
 SEMESTER_START = {}
 SEMESTER_END = {}
@@ -227,7 +217,20 @@ SEMESTER_END['spring'] = SPRING_SEMESTER_END
 ##### OTHER SETTINGS #######################################
 ############################################################
 
-DEFAULT_NUM_TOURS_SETTING_NAME = 'Tours Required'
-DEFAULT_NUM_SHIFTS_SETTING_NAME = 'Shifts Required'
-
 VALID_HARVARD_DOMAINS = ('college.harvard.edu',)
+
+BOARD_POSITIONS = (
+    'Tour Coordinator (Primary)',
+    'Treasurer',
+    'Tour Coordinator',
+    'Vice President',
+    'President',
+    'Freshman Week Coordinator',
+    'Other Board Member',
+    'Secretary'
+)
+
+
+# put these two lines at the very bottom of the settings file
+import djcelery
+djcelery.setup_loader()

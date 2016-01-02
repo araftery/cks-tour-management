@@ -7,6 +7,7 @@ urlpatterns = patterns('',
     url(r'^tours/', include('tours.urls', namespace='tours', app_name='tours')),
     url(r'^shifts/', include('shifts.urls', namespace='shifts', app_name='shifts')),
     url(r'^profiles/', include('profiles.urls', namespace='profiles', app_name='profiles')),
+    url(r'^public/', include('public.urls', namespace='public', app_name='public')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'', include('social.apps.django_app.urls', namespace='social')),
 )

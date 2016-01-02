@@ -1,0 +1,128 @@
+{% extends "public/base.html" %}
+{% load core_tags staticfiles %}
+
+{% block title %} CKS Tour Management: {{month|month_name}} {{year}} {% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static "css/calendar.css" %}" />
+{% endblock %}
+
+{% block content %}
+<h1>
+    <a class="circle-container circle-left" href="{% url 'public:month' prev_month.year prev_month.month %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-left"></i></div>
+    </a>
+    {{month|month_name}} {{year}}
+    <a class="circle-container circle-right" href="{% url 'public:month' next_month.year next_month.month %}">
+        <div class="circle"><i class="glyphicon glyphicon-chevron-right"></i></div>
+    </a>
+</h1>
+
+{% if is_open %}
+    <div class="alert alert-success">This month is open for claiming tours. It closes {{ date_closes|date:"m/d/y \a\t g:i a" }}</div>
+{% endif %}
+
+
+        <table class="month">
+
+            <thead>
+                <tr>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                    <th>Saturday</th>
+                    <th>Sunday</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for week in weeks %}
+                    <tr class="week">
+                    {% for date, day, tours, canceled in week %}
+                        <td class="day{% if date == now.day and month == now.month and year == now.year %} current{% endif %}{% if canceled %} canceled{% endif %}" data-date="{{ date }}">
+                            {% if date > 0 %} <div class="date_num_container"><span class="date_num">{{ date }}</span></div>
+                            <div class="other">
+                                
+                                {% if tours %}
+                                <ul class="tours">
+                                
+                                    {% for tour in tours %}
+                                        <li class="tour{% if tour.is_missed %} missed{% else %}{% if tour.is_late %} late{% endif %}{% endif %}{% if not tour.guide %} unclaimed{% else %}{% if tour.guide == user.person %} claimed{% endif %}{% endif %}{% if not tour.claim_eligible %} claim-ineligible{% endif %}">
+                                            {% if tour.claim_eligible %}{% if not tour.guide %}<a href="{% url 'public:tour-claim' pk=tour.pk %}">{% else %}{% if tour.guide == user.person %}<a href="{% url 'public:tour-unclaim' pk=tour.pk %}">{% endif %}{% endif %}{% endif %}
+                                                <table class="ind_tour"><tr><td>{{ tour.time|date:"g:i" }}</td><td>{% if tour.guide %}{{ tour.guide.first_name|slice:"0:1" }}. {{ tour.guide.last_name }}{% else %}Unclaimed{% endif %}</td></tr></table>
+                                            {% if tour.claim_eligible %}{% if not tour.guide or tour.guide == user.person %}</a>{% endif %}{% endif %}
+                                        </li>
+                                    {% endfor %}
+
+                                </ul>
+                                {% endif %}
+                                    
+                            </div>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+<div class="row">
+    <div class="col-sm-4 key">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title">Key</h3>
+            </div>
+
+            <div class="panel-body">
+                <table>
+                    <tr><td><div class="key-canceled"></div></td><td>No Regular Tours</td></tr>
+                    <tr><td><span class="key-unclaimed">abcdefg</span></td><td>Unclaimed Tour</td></tr>
+                    {% if is_open %}
+                        <tr><td><span class="key-claimed">abcdefg</span></td><td>Claimed By You</td></tr>
+                        <tr><td><span class="key-claimed-ineligible">abcdefg</span></td><td>Claimed By You, Completed</td></tr>
+                    {% else %}
+                        <tr><td><span class="key-claimed-ineligible">abcdefg</span></td><td>Claimed By You</td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-4">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title">Instructions</h3>
+            </div>
+            <div class="panel-body">
+            {% if is_open %}
+                This month is open for tour claiming. To claim a tour, select one of the unclaimed tours, and confirm your selection on the next page. Tours you've claimed will appear in blue. To unclaim a tour, click on it and confirm on the next page.
+            {% else %}
+                This month is not open for tour claiming. Tours you've claimed or completed are in blue. If you cannot make it to a tour you've claimed, please contact the Tour Coordinator{% if primary_tour_coordinator %}, {{ primary_tour_coordinator.full_name }}, at {{ primary_tour_coordinator.email }}{% endif %}.
+            {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-4">
+        <div class="panel panel-default equal-height">
+            <div class="panel-heading">
+                <h3 class="panel-title cal"><a href="{% url 'public:month' prev_year month %}" class="cal_btn_left"><span class="glyphicon glyphicon-chevron-left"></span></a> {{ year }}<a href="{% url 'public:month' next_year month %}" class="cal_btn_right"><span class="glyphicon glyphicon-chevron-right"></span></a></h3>
+            </div>
+
+            <div class="panel-body">
+                <div class="select-month-container">
+                    <div class="select-month-row">
+                    {% for num, name in months_list %}
+                        <a {% if num == month %} class="active "{% endif %}href="{% url 'public:month' year num %}" class="month-btn">{{ name|slice:":3" }}</a>
+                        {% if num|divisibleby:"4" %}
+                            </div>{% if num != 12 %}<div class="select-month-row">{% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

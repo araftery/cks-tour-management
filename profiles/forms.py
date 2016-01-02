@@ -36,6 +36,19 @@ class BasePersonForm(forms.ModelForm):
         except ValueError:
             pass
 
+        if self.cleaned_data.get('site_admin') is True and self.cleaned_data.get('position') not in settings.BOARD_POSITIONS:
+            raise ValidationError(_('Site admins must have a board position.'), code='invalid')
+
+    def clean_site_admin(self):
+        site_admin = self.cleaned_data.get('site_admin')
+        if self.instance.pk:
+            # if making the person not a site admin, make sure at least one other exists
+            if self.instance.site_admin is True and site_admin is False:
+                if not Person.objects.filter(site_admin=True).exclude(pk=self.instance.pk):
+                    raise ValidationError(_("There must be at least one site admin at all times. Set another person as a site admin first before removing this person's status."), code='invalid')
+
+        return site_admin
+
     def clean_harvard_email(self):
         harvard_email = self.cleaned_data.get('harvard_email')
 
@@ -69,6 +82,7 @@ class BasePersonForm(forms.ModelForm):
 
     class Meta:
         model = Person
+        fields = ('first_name', 'last_name', 'email', 'harvard_email', 'phone', 'year', 'member_since_year', 'position', 'site_admin', 'house', 'notes',)
 
 
 class PersonForm(BasePersonForm):

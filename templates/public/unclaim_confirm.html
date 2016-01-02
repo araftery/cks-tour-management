@@ -1,0 +1,46 @@
+{% extends "public/base.html" %}
+{% load core_tags staticfiles %}
+
+{% block title %} CKS Tour Management: {{month|month_name}} {{year}} {% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static "css/calendar.css" %}" />
+{% endblock %}
+
+{% block content %}
+<h1>Confirm - Unclaim Tour: {{ tour.time|date:"m/d/y \a\t g:i a" }}</h1>
+<div class="confirm-container">
+    <div class="panel panel-danger">
+        <div class="panel-heading">Tour Information</div>
+        <div class="panel-body">
+            <table>
+                <tr>
+                    <td>Source</td><td>{{ tour.source }}</td>
+                </tr>
+                <tr>
+                    <td>Date</td><td>{{ tour.time|date:"m/d/y" }}</td>
+                </tr>
+                <tr>
+                    <td>Time</td><td>{{ tour.time|date:"g:i a" }}</td>
+                </tr>
+                {% if tour.length %}
+                <tr>
+                    <td>Length</td><td>{{ tour.length }} minutes</td>
+                </tr>
+                {% endif %}
+
+                {% if tour.notes %}
+                <tr>
+                    <td>Notes</td><td>{{ tour.notes }}</td>
+                </tr>
+                {% endif %}
+            </table>
+
+
+            <a class="btn btn-danger btn-block post-btn" data-confirm='false' href="{% url 'public:tour-unclaim' pk=tour.pk %}">Yes, unclaim this tour</a>
+            <a class="btn btn-info btn-block" href="{% url 'public:month' tour.time_local.year tour.time_local.month %}">No, return</a>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

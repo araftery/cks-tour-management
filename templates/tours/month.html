@@ -102,10 +102,6 @@
                 {% if not month_initialized %}
                     <a href="{% url 'tours:initialize-month' year month %}" class="btn btn-block btn-danger">Initialize Month</a>
                 {% else %}
-                    {% comment %}
-                    TODO
-                    <a href="{% url 'edit-month-initialization-url' year month %}" class="btn btn-block btn-danger">Edit Month Initialization</a>
-                    {% endcomment %}
                     <a href="{% url 'tours:uninitialize-month' year month %}" class="btn btn-block btn-danger">Uninitialize Month</a>
                 {% endif %}
             {% endif %}

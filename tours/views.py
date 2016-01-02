@@ -3,27 +3,41 @@ from collections import Counter
 import datetime
 from dateutil.relativedelta import relativedelta
 
-from django.core.urlresolvers import reverse_lazy
+from django.contrib.auth.models import Group
+from django.core.urlresolvers import reverse_lazy, reverse
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import render, redirect
 from django.views.generic import View, UpdateView, CreateView, DeleteView
 
 from braces.views import (
+    LoginRequiredMixin,
     PermissionRequiredMixin,
     MultiplePermissionsRequiredMixin,
 )
 
 from core.views import BoardOnlyMixin
 from core import utils
+from profiles.utils import get_person_by_position
 from tours.models import Tour, CanceledDay, DefaultTour, InitializedMonth, OpenMonth
 from tours.forms import TourForm, DefaultTourForm, ChooseMonthForm, OpenMonthForm
 from tours import utils as tours_utils
 
 
-class MonthView(BoardOnlyMixin, View):
+class MonthView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
+        if kwargs.get('public'):
+            # make sure this user is active
+            if not request.user.person.is_active:
+                raise PermissionDenied
+        else:
+            # make sure this is a board member
+            try:
+                request.user.groups.get(name='Board Members')
+            except Group.DoesNotExist:
+                raise PermissionDenied
+
         now = utils.now()
         year = kwargs.get('year')
         month = kwargs.get('month')
@@ -32,13 +46,12 @@ class MonthView(BoardOnlyMixin, View):
         date = datetime.date(year, month, 1)
         next_month = date + relativedelta(months=1)
         prev_month = date + relativedelta(months=-1)
+        primary_tour_coordinator = get_person_by_position('Tour Coordinator (Primary)', 'Tour Coordinator')
 
         is_open, date_closes = tours_utils.month_is_open(month=month, year=year, return_tuple=True)
 
         if is_open:
-            public_url = None
-            # TODO
-            #public_url = request.build_absolute_uri(reverse_lazy('public:month', kwargs={'year': year, 'month': month}))
+            public_url = request.build_absolute_uri(unicode(reverse('public:month', kwargs={'year': year, 'month': month})))
         else:
             public_url = None
 
@@ -60,10 +73,13 @@ class MonthView(BoardOnlyMixin, View):
             'is_open': is_open,
             'date_closes': date_closes,
             'open_eligible': open_eligible,
-            'public_url': public_url
+            'public_url': public_url,
+            'primary_tour_coordinator': primary_tour_coordinator,
         }
 
-        if kwargs.get('print') is True:
+        if kwargs.get('public'):
+            return render(request, 'public/month.html', context)
+        elif kwargs.get('print') is True:
             return render(request, 'tours/month_print.html', context)
         else:
             return render(request, 'tours/month.html', context)
@@ -76,7 +92,7 @@ class EditTourView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     template_name = 'tours/tour_form.html'
 
     def get_success_url(self):
-        return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('tours:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class CreateTourView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
@@ -86,7 +102,7 @@ class CreateTourView(PermissionRequiredMixin, BoardOnlyMixin, CreateView):
     template_name = 'tours/tour_form.html'
 
     def get_success_url(self):
-        return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('tours:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class DeleteTourView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
@@ -94,7 +110,7 @@ class DeleteTourView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     model = Tour
 
     def get_success_url(self):
-        return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('tours:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class EditDefaultTourView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
@@ -307,7 +323,7 @@ class EditOpenMonthView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
         return context
 
     def get_success_url(self):
-        return reverse_lazy('tours:month', kwargs={'year': self.object.time.year, 'month': self.object.time.month})
+        return reverse_lazy('tours:month', kwargs={'year': self.object.time_local().year, 'month': self.object.time_local().month})
 
 
 class CloseMonthView(PermissionRequiredMixin, BoardOnlyMixin, View):

@@ -163,6 +163,7 @@ class Person(models.Model):
         Returns dictionary of form:
         {
             'status': 'complete'|'incomplete'|'projected',
+            'num_required': int,
             'num_remaining': int,
             'num_to_sign_up': int,
             'num_extra': int,
@@ -177,10 +178,11 @@ class Person(models.Model):
         year, semester = core_utils.parse_year_semester(year, semester)
         now_obj = core_utils.now()
         semester_tours = self.tours.filter(counts_for_requirements=True).semester(semester=semester, year=year).order_by('time')
-        complete = semester_tours.filter(missed=False, late=False, time__lte=now_obj)
+        complete = semester_tours.filter(missed=False, time__lte=now_obj)
         late = semester_tours.filter(late=True, missed=False, time__lte=now_obj)
         missed = semester_tours.filter(missed=True, time__lte=now_obj)
-        upcoming = semester_tours.filter(time__gt=now_obj)
+        past = semester_tours.filter(time__lt=now_obj)
+        upcoming = semester_tours.filter(time__gte=now_obj)
 
         num_required = self.tours_required_num(semester=semester, year=year)
         num_remaining = num_required - complete.count()
@@ -204,6 +206,7 @@ class Person(models.Model):
 
         return {
             'status': status,
+            'num_required': num_required,
             'num_remaining': num_remaining,
             'num_to_sign_up': num_to_sign_up,
             'num_extra': num_extra,
@@ -211,6 +214,7 @@ class Person(models.Model):
             'complete': complete,
             'late': late,
             'missed': missed,
+            'past': past,
             'upcoming': upcoming,
             'tours': semester_tours,
         }
@@ -220,6 +224,7 @@ class Person(models.Model):
         Returns dictionary of form:
         {
             'status': 'complete'|'incomplete'|'projected',
+            'num_required': int,
             'num_remaining': int,
             'num_to_sign_up': int,
             'num_extra': int,
@@ -227,6 +232,7 @@ class Person(models.Model):
             'complete': [],
             'late': [],
             'missed': [],
+            'past': [],
             'upcoming': [],
             'shifts': [],
         }
@@ -234,10 +240,11 @@ class Person(models.Model):
         year, semester = core_utils.parse_year_semester(year, semester)
         now_obj = core_utils.now()
         semester_shifts = self.shifts.filter(counts_for_requirements=True).semester(semester=semester, year=year).order_by('time')
-        complete = semester_shifts.filter(missed=False, late=False, time__lte=now_obj)
+        complete = semester_shifts.filter(missed=False, time__lte=now_obj)
         late = semester_shifts.filter(late=True, missed=False, time__lte=now_obj)
         missed = semester_shifts.filter(missed=True, time__lte=now_obj)
-        upcoming = semester_shifts.filter(time__gt=now_obj)
+        past = semester_shifts.filter(time__lt=now_obj)
+        upcoming = semester_shifts.filter(time__gte=now_obj)
 
         num_required = self.shifts_required_num(semester=semester, year=year)
         num_remaining = num_required - complete.count()
@@ -261,6 +268,7 @@ class Person(models.Model):
 
         return {
             'status': status,
+            'num_required': num_required,
             'num_remaining': num_remaining,
             'num_to_sign_up': num_to_sign_up,
             'num_extra': num_extra,
@@ -268,13 +276,13 @@ class Person(models.Model):
             'complete': complete,
             'late': late,
             'missed': missed,
+            'past': past,
             'upcoming': upcoming,
             'shifts': semester_shifts,
         }
 
-    @property
-    def is_active(self):
-        if self._default_manager.active().current_members().filter(pk=self.pk):
+    def is_active(self, semester=None, year=None):
+        if self._default_manager.current_members(semester=semester, year=year).active(semester=semester, year=year).filter(pk=self.pk):
             return True
         else:
             return False
@@ -303,6 +311,11 @@ class Person(models.Model):
 
     def __unicode__(self):
         return u'{} {}'.format(self.first_name, self.last_name)
+
+    class Meta:
+        permissions = (
+            ("send_requirements_email", "Can send requirements emails"),
+        )
 
 
 class InactiveSemester(models.Model):
