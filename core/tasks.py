@@ -10,7 +10,7 @@ from tours.utils import send_tour_reminder_email, send_tour_reminder_text
 from shifts.utils import send_shift_reminder_email, send_shift_reminder_text
 
 
-@periodic_task(run_every=crontab(hour=19, minute=0))
+#@periodic_task(run_every=crontab(hour=19, minute=0))
 def send_reminder_emails():
     """
     Sends reminder emails for tomorrow's tours and shifts.
@@ -28,7 +28,7 @@ def send_reminder_emails():
         send_shift_reminder_email.delay(shift)
 
 
-@periodic_task(run_every=crontab(hour=8, minute=0))
+#@periodic_task(run_every=crontab(hour=8, minute=0))
 def send_tour_reminder_texts():
     """
     Sends reminder texts for today's tours and shifts.

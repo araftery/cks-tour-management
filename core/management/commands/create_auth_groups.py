@@ -67,7 +67,7 @@ groups = {
 
 class Command(BaseCommand):
     args = ''
-    help = 'Closes the specified poll for voting'
+    help = 'Creates auth groups'
 
     def handle(self, *args, **options):
         ContentType = get_model("contenttypes", "ContentType")
