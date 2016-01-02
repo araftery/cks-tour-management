@@ -108,5 +108,5 @@
 [x] only superusers can change superuser status
 [x] admin registers
 [x] data migration to make auth groups
-[ ] celery emails
-[ ] requirements file
+[x] celery emails
+[x] requirements file

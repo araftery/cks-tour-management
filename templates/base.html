@@ -105,6 +105,8 @@
 
               <li class="{% navactive request 'core:settings' %}"><a href="{% url 'core:settings' %}">Settings</a></li>
               {% if user.is_staff %}<li><a href="/admin">Admin</a></li>{% endif %}
+
+              {% if user %}<li><a href="{% url 'core:logout' %}">Logout ({{ user.person.first_name }} {{ user.person.last_name }})</a></li>{% endif %}
           </ul>
         </div><!--/.nav-collapse -->
       </div>
