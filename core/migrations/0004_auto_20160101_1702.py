@@ -70,7 +70,10 @@ def create_auth_groups(apps, schema_editor):
     Group = apps.get_model("auth", "Group")
 
     for group_name, model_names in groups.iteritems():
-        content_types = [ContentType.objects.get(app_label=model_name.rsplit('.', 1)[0], model=model_name.rsplit('.', 1)[1].lower()) for model_name in model_names]
+        content_types = []
+        for model_name in model_names:
+            print model_name
+            content_types.append(ContentType.objects.get(app_label=model_name.rsplit('.', 1)[0], model=model_name.rsplit('.', 1)[1].lower()) for model_name in model_names)
         group, created = Group.objects.get_or_create(name=group_name)
         for content_type in content_types:
             permissions = Permission.objects.filter(content_type=content_type)
