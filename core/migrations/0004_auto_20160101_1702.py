@@ -18,7 +18,6 @@ groups = {
         'core.Setting',
         'auth.User',
         'auth.Group',
-        'default.UserSocialAuth',
     ),
     'Vice President': (
         'tours.Tour',
@@ -33,7 +32,6 @@ groups = {
         'core.Setting',
         'auth.User',
         'auth.Group',
-        'default.UserSocialAuth',
     ),
     'Treasurer': (
         'profiles.DuesPayment',
@@ -47,7 +45,6 @@ groups = {
         'core.Setting',
         'auth.User',
         'auth.Group',
-        'default.UserSocialAuth',
     ),
     'Tour Coordinators': (
         'tours.Tour',
