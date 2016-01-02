@@ -29,7 +29,7 @@ def send_reminder_emails():
 
 
 #@periodic_task(run_every=crontab(hour=8, minute=0))
-def send_tour_reminder_texts():
+def send_reminder_texts():
     """
     Sends reminder texts for today's tours and shifts.
     """
