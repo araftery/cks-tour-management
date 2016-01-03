@@ -10,6 +10,13 @@ from tours.utils import send_tour_reminder_email, send_tour_reminder_text
 from shifts.utils import send_shift_reminder_email, send_shift_reminder_text
 
 
+# it would be best to run these with celerybeat, but since
+# we're on Heroku's free tier, the server will sleep periodically,
+# so we can't rely on it being awake to send the reminders.
+# instead, we'll use Heroku's scheduler with management commands.
+# if running on something like EC2, however, uncomment the decorators
+# below and run celerybeat.
+
 #@periodic_task(run_every=crontab(hour=19, minute=0))
 def send_reminder_emails():
     """
