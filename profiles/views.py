@@ -171,6 +171,13 @@ class DeletePersonView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     model = Person
     form = PersonForm
 
+    def delete(self, request, *args, **kwargs):
+        user = self.object.user
+        user.usersocialauth_set.all().delete()
+        user.delete()
+
+        return super(DeletePersonView, self).delete(self, request, *args, **kwargs)
+
     def get_success_url(self):
         year, semester = member_latest_semester(self.object)
         return reverse_lazy('profiles:roster', kwargs={'year': year, 'semester': semester})
