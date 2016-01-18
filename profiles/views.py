@@ -172,6 +172,7 @@ class DeletePersonView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     form = PersonForm
 
     def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
         user = self.object.user
         user.usersocialauth_set.all().delete()
         user.delete()
