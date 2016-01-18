@@ -68,6 +68,7 @@ class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
         context['special_requirements_form'] = SpecialRequirementsForm(initial_data)
         context['semester'] = semester
         context['year'] = year
+        context['site_admins_count'] = Person.objects.filter(site_admin=True).count()
         return context
 
     def form_valid(self, form):
@@ -173,6 +174,14 @@ class DeletePersonView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
+
+        # only site admins can delete site admins, and there always must be at least
+        # one site admin
+        if self.object.site_admin is True and request.user.person.site_admin is False:
+            raise PermissionDenied
+        elif self.object.site_admin is True and Person.objects.filter(site_admin=True).count() == 1:
+            raise PermissionDenied
+
         user = self.object.user
         UserSocialAuth.objects.filter(user=user).delete()
         user.delete()
