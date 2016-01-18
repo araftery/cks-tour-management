@@ -29,7 +29,7 @@
 
 {% if perms.profiles.delete_person %}
 {% if not object.site_admin or request.user.person.site_admin %}
-{% if not object.site_admin or site_admins_count > 1) %}
+{% if not object.site_admin or site_admins_count > 1 %}
 <div class="panel panel-warning">
     <div class="panel-heading">Warning: these actions are irreversible</div>
     <div class="panel-body">
