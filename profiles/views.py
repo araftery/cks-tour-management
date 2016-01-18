@@ -174,7 +174,7 @@ class DeletePersonView(PermissionRequiredMixin, BoardOnlyMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
         user = self.object.user
-        user.usersocialauth_set.all().delete()
+        UserSocialAuth.objects.filter(user=user).delete()
         user.delete()
 
         return super(DeletePersonView, self).delete(self, request, *args, **kwargs)
