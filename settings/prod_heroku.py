@@ -4,7 +4,7 @@ from base import *
 ##### STATIC FILES #########################################
 ############################################################
 
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 
 ############################################################
