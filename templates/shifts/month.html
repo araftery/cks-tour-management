@@ -3,10 +3,6 @@
 
 {% block title %} CKS Tour Management: {{month|month_name}} {{year}} {% endblock %}
 
-{% block extrahead %}
-    <link rel="stylesheet" href="{% static "css/calendar.css" %}" />
-{% endblock %}
-
 {% block content %}
 <h1>
     <a class="circle-container circle-left" href="{% url 'shifts:month' prev_month.year prev_month.month %}">
