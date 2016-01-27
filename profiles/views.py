@@ -355,6 +355,7 @@ class RosterView(BoardOnlyMixin, View):
                 'tours_status': person.tours_status(semester=semester, year=year),
                 'shifts_status': person.shifts_status(semester=semester, year=year),
                 'dues_status': dues_status,
+                'active': person.is_active(semester=semester, year=year)
             }
 
             # dues payments

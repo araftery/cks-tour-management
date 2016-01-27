@@ -88,7 +88,7 @@
 
         <tbody>
             {% for person in people %}
-                <tr{% if not person.is_active %} class=" inactive-member"{% endif %}>
+                <tr{% if not person.cached_status.active %} class=" inactive-member"{% endif %}>
                     <td>{{ person.first_name }}</td>
                     <td>{{ person.last_name }}</td>
                     <td>{{ person.email }}</td>
@@ -100,8 +100,8 @@
                     {% endif %}
 
                     {% if collect_dues %}
-                        <td class="dues {% if person.is_active %}status_{{ person.cached_status.dues_status }}{% endif %} dues_payment_cell">
-                        {% if person.is_active %}
+                        <td class="dues {% if person.cached_status.active %}status_{{ person.cached_status.dues_status }}{% endif %} dues_payment_cell">
+                        {% if person.cached_status.active %}
 
                             {% if person.cached_status.dues_status == 'complete' %}
                                 <div class="requirement_circle complete"></div>
@@ -118,8 +118,8 @@
                         </td>
                     {% endif %}
 
-                    <td class="tours status_{% if person.is_active %}{{ person.cached_status.tours_status.status }}{% endif %}">
-                        {% if person.is_active %}
+                    <td class="tours status_{% if person.cached_status.active %}{{ person.cached_status.tours_status.status }}{% endif %}">
+                        {% if person.cached_status.active %}
                             {% if person.cached_status.tours_status.status == 'incomplete' %}
                                 <div class="remaining">{{ person.cached_status.tours_status.num_remaining }}</div>
                             {% elif person.cached_status.tours_status.status == 'projected' %}
@@ -140,8 +140,8 @@
                         {% endif %}
                     </td>
                         
-                    <td class="shifts status_{% if person.is_active %}{{ person.cached_status.shifts_status.status }}{% endif %}">
-                        {% if person.is_active %}
+                    <td class="shifts status_{% if person.cached_status.active %}{{ person.cached_status.shifts_status.status }}{% endif %}">
+                        {% if person.cached_status.active %}
                             {% if person.cached_status.shifts_status.status == 'incomplete' %}
                                 <div class="remaining">{{ person.cached_status.shifts_status.num_remaining }}</div>
                             {% elif person.cached_status.shifts_status.status == 'projected' %}
