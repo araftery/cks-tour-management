@@ -73,7 +73,7 @@ class Tour(models.Model):
         now = core_utils.now()
 
         # check if the month is open
-        if not month_is_open(month=now.month, year=now.year):
+        if not month_is_open(month=self.time.month, year=self.time.year):
             return False
 
         # month is open, check if the tour is in the future
@@ -109,7 +109,7 @@ class OpenMonth(models.Model):
     closes = models.DateTimeField()
 
     def __unicode__(self):
-        return u'{} {}, opens {}, closes {}'.format(calendar.month_name[self.month], self.year, self.opens.strftime('%m/%d/%y %h:%i %a'), self.closes.strftime('%m/%d/%y %h:%i %a'))
+        return u'{} {}, opens {}, closes {}'.format(calendar.month_name[self.month], self.year, self.opens.strftime('%m/%d/%y %h:%M %a'), self.closes.strftime('%m/%d/%y %h:%M %a'))
 
 
 class InitializedMonth(models.Model):
