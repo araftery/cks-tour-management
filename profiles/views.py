@@ -421,6 +421,6 @@ class SendRequirementsEmailsView(PermissionRequiredMixin, BoardOnlyMixin, View):
     def post(self, request, *args, **kwargs):
         active_members = Person.objects.select_related().current_members().active()
         for person in active_members:
-            send_requirements_email.delay(person)
+            send_requirements_email(person)
 
         return render(request, 'profiles/requirements_emails_confirm.html', {'num': active_members.count()})
