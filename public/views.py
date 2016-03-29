@@ -13,7 +13,7 @@ from core.utils import parse_year_semester, delta_semester, dues_required
 from profiles.utils import get_person_by_position
 
 
-class MemberIsActiveMixin(UserPassesTestMixin, LoginRequiredMixin):
+class MemberIsActiveMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self, user):
         return user.person.is_active()
 
