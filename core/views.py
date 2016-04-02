@@ -84,4 +84,4 @@ def text_response(request):
     msg = EmailMultiAlternatives(u'Text Message to CKS Twilio Account', 'Message from {}: {}'.format(from_, text), from_email, [to_email])
     msg.send()
 
-    return render(request, 'response.xml', content_type="text/xml")
+    return render(request, 'core/response.xml', content_type="text/xml")
