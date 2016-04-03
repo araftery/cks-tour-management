@@ -161,7 +161,7 @@ STATICFILES_FINDERS = (
 
 ROOT_URLCONF = 'urls'
 WSGI_APPLICATION = 'wsgi.application'
-SECRET_KEY = 'ye#fv=lsp5sm@4lg@23(55d64qydp1%=2)wdkr!twr5_827g8n'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 DATABASES = {}
 TIME_ZONE = 'America/New_York'
 USE_TZ = True
