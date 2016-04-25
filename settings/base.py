@@ -35,7 +35,6 @@ THIRD_PARTY_APPS = (
     'crispy_forms',
     'selectize',
     'social.apps.django_app.default',
-    'djrill',
     'djcelery',
 )
 
