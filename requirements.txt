@@ -16,7 +16,6 @@ django-crispy-forms==1.4.0
 django-extra-views==0.6.5
 django-phonenumber-field==0.6
 django-selectize==1.2
-djrill==2.0
 gunicorn==19.1.1
 httplib2==0.9
 kombu==3.0.32
@@ -37,3 +36,5 @@ six==1.5.2
 twilio==3.6.9
 vobject==0.6.6
 whitenoise==2.0.6
+sendgrid==2.2.1
+sendgrid-django==2.0.0

@@ -131,9 +131,8 @@ SOCIAL_AUTH_PIPELINE = (
 ##### EMAIL ################################################
 ############################################################
 
-MANDRILL_USER = os.environ.get('MANDRILL_USER')
-MANDRILL_API_KEY = os.environ.get('MANDRILL_API_KEY')
-EMAIL_BACKEND = "djrill.mail.backends.djrill.DjrillBackend"
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+EMAIL_BACKEND = "sgbackend.SendGridBackend"
 SERVER_EMAIL = "crimsonkeysociety@gmail.com"
 
 ADMINS = (
