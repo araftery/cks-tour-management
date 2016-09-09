@@ -322,6 +322,35 @@ class BulkCreatePersonView(PermissionRequiredMixin, BoardOnlyMixin, ModelFormSet
     def get_queryset(self, *args, **kwargs):
         return Person.objects.none()
 
+    def form_valid(self, formset):
+        formset.save()
+
+        for form in formset:
+            person = form.instance
+
+            # create user and social auth objects
+            username = person.harvard_email.split('@')[0]
+            user = User.objects.create_user(username=username, email=person.harvard_email, first_name=person.first_name, last_name=person.last_name)
+
+            # no need for the user to have a password, since we'll use Google OAuth to login
+            user.set_unusable_password()
+            user.save()
+
+            person.user = user
+            person.save()
+
+            UserSocialAuth.objects.create(user=user, provider='google-oauth2', uid=person.harvard_email)
+
+            # set appropriate groups and status based on position
+            set_groups_by_position(person)
+
+            if person.site_admin is True:
+                user.is_staff = True
+                user.is_superuser = True
+                user.save()
+
+        return super(BulkCreatePersonView, self).formset_valid(formset)
+
 
 class RosterView(BoardOnlyMixin, View):
     template_name = 'profiles/roster.html'
