@@ -322,7 +322,7 @@ class BulkCreatePersonView(PermissionRequiredMixin, BoardOnlyMixin, ModelFormSet
     def get_queryset(self, *args, **kwargs):
         return Person.objects.none()
 
-    def form_valid(self, formset):
+    def formset_valid(self, formset):
         formset.save()
 
         for form in formset:
