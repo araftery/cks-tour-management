@@ -16,8 +16,6 @@ from profiles.models import Person, OverrideRequirement, InactiveSemester, DuesP
 from profiles.forms import PersonForm, SpecialRequirementsForm, PersonBulkForm, DuesPaymentForm
 from profiles.utils import set_groups_by_position, member_latest_semester, send_requirements_email
 
-import pprint
-
 
 class EditPersonView(PermissionRequiredMixin, BoardOnlyMixin, UpdateView):
     permission_required = 'profiles.change_person'
